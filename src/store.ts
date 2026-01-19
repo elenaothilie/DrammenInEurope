@@ -1,56 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from './lib/supabaseClient';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback } from './types';
 
 // -----------------------------------------------------------------------------
 // TYPES
 // -----------------------------------------------------------------------------
-
-export type Role = 'participant' | 'admin';
-
-export interface User {
-  id: string;
-  fullName: string;
-  displayName: string;
-  role: Role;
-}
-
-export interface ActivityOption {
-  id: string;
-  title: string;
-  timeStart: string;
-  timeEnd: string;
-  location: string;
-  meetingPoint: string;
-  transport: string;
-  description: string;
-  tags: string[];
-  capacityMax: number;
-  sortOrder?: number;
-}
-
-export interface TripDay {
-  id: string;
-  date: string;
-  title: string;
-  description: string;
-  isChoiceDay: boolean;
-  isLocked?: boolean;
-  scheduleItems: {
-    time: string;
-    activity: string;
-    location?: string;
-  }[];
-  choiceBlockId?: string;
-  sortOrder?: number;
-}
-
-export interface Signup {
-  activityId: string;
-  userId: string;
-  timestamp: number;
-  status: 'confirmed' | 'waitlist' | 'cancelled';
-}
 
 interface AppState {
   currentUser: User | null;
@@ -59,6 +14,8 @@ interface AppState {
   days: TripDay[];
   activities: ActivityOption[];
   signups: Signup[];
+  infoPages: InfoPage[];
+  feedbacks: Feedback[];
   isLoading: boolean;
   error: string | null;
   
@@ -88,12 +45,20 @@ interface AppState {
   removeActivity: (activityId: string) => Promise<void>;
   reorderActivities: (fromIndex: number, toIndex: number) => Promise<void>;
 
-  // Placeholder
-  adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
-  reorderScheduleItems: (dayId: string, fromIndex: number, toIndex: number) => void;
+  // Info Pages
+  updateInfoPage: (slug: string, content: string) => Promise<void>;
+  
+  // Feedback
+  submitFeedback: (message: string, ratings?: Feedback['ratings'], highlights?: string, improvements?: string) => Promise<void>;
+
+  // User Management
   addUser: (name: string) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
   updateUser: (userId: string, data: Partial<User>) => Promise<void>;
+  
+  // Placeholder
+  adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
+  reorderScheduleItems: (dayId: string, fromIndex: number, toIndex: number) => void;
 }
 
 // -----------------------------------------------------------------------------
@@ -110,6 +75,8 @@ export const useStore = create<AppState>()(
       days: [],
       activities: [],
       signups: [],
+      infoPages: [],
+      feedbacks: [],
       isLoading: false,
       error: null,
 
@@ -156,31 +123,29 @@ export const useStore = create<AppState>()(
       fetchData: async () => {
         set({ isLoading: true, error: null });
         try {
-          // Fetch Profiles
-          const { data: profiles, error: usersError } = await supabase
-            .from('profiles')
-            .select('*');
+          // Parallel Fetch
+          const [
+            { data: profiles, error: usersError },
+            { data: daysData, error: daysError },
+            { data: actsData, error: actsError },
+            { data: signupsData, error: signupsError },
+            { data: infoData, error: infoError },
+            { data: feedbackData, error: feedbackError }
+          ] = await Promise.all([
+            supabase.from('profiles').select('*'),
+            supabase.from('trip_days').select('*').order('sort_order', { ascending: true }),
+            supabase.from('activities').select('*').order('sort_order', { ascending: true }),
+            supabase.from('signups').select('*'),
+            supabase.from('info_pages').select('*'),
+            supabase.from('feedback').select('*').order('created_at', { ascending: false })
+          ]);
+
           if (usersError) throw usersError;
-
-          // Fetch Days
-          const { data: daysData, error: daysError } = await supabase
-            .from('trip_days')
-            .select('*')
-            .order('sort_order', { ascending: true });
           if (daysError) throw daysError;
-
-          // Fetch Activities
-          const { data: actsData, error: actsError } = await supabase
-            .from('activities')
-            .select('*')
-            .order('sort_order', { ascending: true });
           if (actsError) throw actsError;
-
-          // Fetch Signups
-          const { data: signupsData, error: signupsError } = await supabase
-            .from('signups')
-            .select('*');
           if (signupsError) throw signupsError;
+          if (infoError) console.error("Info pages fetch error:", infoError);
+          if (feedbackError) console.error("Feedback fetch error:", feedbackError);
 
           // Map Data to Store Format
           const users: User[] = (profiles || []).map((p: any) => ({
@@ -223,7 +188,24 @@ export const useStore = create<AppState>()(
             timestamp: new Date(s.created_at).getTime()
           }));
 
-          set({ users, days, activities, signups, isLoading: false });
+          const infoPages: InfoPage[] = (infoData || []).map((i: any) => ({
+              slug: i.slug,
+              title: i.title,
+              content: i.content,
+              updatedAt: i.updated_at
+          }));
+
+          const feedbacks: Feedback[] = (feedbackData || []).map((f: any) => ({
+              id: f.id,
+              userId: f.user_id,
+              message: f.message,
+              ratings: f.ratings,
+              highlights: f.highlights,
+              improvements: f.improvements,
+              createdAt: f.created_at
+          }));
+
+          set({ users, days, activities, signups, infoPages, feedbacks, isLoading: false });
 
           // Auto-login first user if none selected (dev convenience)
           if (!get().currentUser && users.length > 0) {
@@ -232,7 +214,9 @@ export const useStore = create<AppState>()(
 
         } catch (err: any) {
           console.error('Fetch error:', err);
-          set({ error: err.message, isLoading: false });
+          // Don't set error state aggressively to avoid UI blocking if one table is missing
+          // set({ error: err.message, isLoading: false });
+          set({ isLoading: false });
         }
       },
 
@@ -430,7 +414,7 @@ export const useStore = create<AppState>()(
         const day = get().days.find(d => d.id === dayId);
         if (!day) return;
 
-        const newItem = { time: '12:00', activity: 'Ny aktivitet', location: '' };
+        const newItem = { id: crypto.randomUUID(), time: '12:00', activity: 'Ny aktivitet', location: '' };
         const newItems = [...day.scheduleItems, newItem];
 
         set(state => ({
@@ -593,6 +577,70 @@ export const useStore = create<AppState>()(
             supabase.from('activities').update({ sort_order: index }).eq('id', a.id)
         );
         await Promise.all(updates);
+      },
+
+      // -----------------------------------------------------------------------
+      // INFO PAGE ACTIONS
+      // -----------------------------------------------------------------------
+
+      updateInfoPage: async (slug, content) => {
+          const { infoPages } = get();
+          const existing = infoPages.find(p => p.slug === slug);
+          
+          if (existing) {
+              set({
+                  infoPages: infoPages.map(p => p.slug === slug ? { ...p, content, updatedAt: new Date().toISOString() } : p)
+              });
+          } else {
+              set({
+                  infoPages: [...infoPages, { slug, content, title: slug, updatedAt: new Date().toISOString() }]
+              });
+          }
+
+          // DB Upsert
+          const { error } = await supabase.from('info_pages').upsert({
+              slug,
+              content,
+              title: slug
+          });
+          
+          if (error) console.error("Error updating page:", error);
+      },
+
+      // -----------------------------------------------------------------------
+      // FEEDBACK ACTIONS
+      // -----------------------------------------------------------------------
+      
+      submitFeedback: async (message, ratings, highlights, improvements) => {
+          const { currentUser } = get();
+          
+          // Allow submitting without being logged in (anonymous feedback for testing/admins)
+          // Ideally we would want a user, but for now we relax this constraint
+          const userId = currentUser ? currentUser.id : null;
+
+          const { data, error } = await supabase.from('feedback').insert({
+              user_id: userId,
+              message,
+              ratings,
+              highlights,
+              improvements
+          }).select().single();
+
+          if (data && !error) {
+              const newFeedback: Feedback = {
+                  id: data.id,
+                  userId: data.user_id || 'anonymous',
+                  message: data.message,
+                  ratings: data.ratings,
+                  highlights: data.highlights,
+                  improvements: data.improvements,
+                  createdAt: data.created_at
+              };
+              set(state => ({ feedbacks: [newFeedback, ...state.feedbacks] }));
+          } else {
+              console.error("Feedback submission error:", error);
+              if (error) alert("Kunne ikke sende feedback: " + error.message);
+          }
       }
     }),
     {

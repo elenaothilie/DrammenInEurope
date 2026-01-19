@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import type { TripDay, ActivityOption, Signup } from '../store';
-import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical } from 'lucide-react';
+import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 
 export function AdminView() {
   const { 
-    isAdmin, loginAdmin, activities, signups, users, days, 
+    isAdmin, loginAdmin, activities, signups, users, days, feedbacks,
     adminRemoveUser, adminToggleDayLock,
     updateDay, updateScheduleItem, addScheduleItem, removeScheduleItem,
     updateActivity, addActivity, removeActivity,
@@ -24,6 +25,16 @@ export function AdminView() {
   const [draggedDayId, setDraggedDayId] = useState<string | null>(null);
   const [draggedActivityId, setDraggedActivityId] = useState<string | null>(null);
   const [draggedItemId, setDraggedItemId] = useState<{dayId: string, idx: number} | null>(null);
+
+  const contentPages = [
+    { title: 'Oppslagstavle', icon: Bell, path: '/noticeboard' },
+    { title: 'Grupper', icon: Users, path: '/groups' },
+    { title: 'Dagens Planer', icon: Calendar, path: '/todays-plans' },
+    { title: 'Pakkeliste', icon: ClipboardList, path: '/packing-list' },
+    { title: 'Regler', icon: Book, path: '/rules' },
+    { title: 'Feedback', icon: MessageCircle, path: '/feedback?mode=admin', badge: feedbacks.length > 0 ? feedbacks.length : undefined },
+    { title: 'Photodrop', icon: Camera, path: '/photodrop' },
+  ];
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,12 +440,17 @@ export function AdminView() {
           <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm">ADMIN</div>
           <h1 className="font-display font-bold text-xl uppercase tracking-tight hidden md:block">Tur Dashboard</h1>
         </div>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="text-white/60 hover:text-white flex items-center gap-2 font-mono text-xs uppercase"
-        >
-          <LogOut size={16} /> Logg ut
-        </button>
+        <div className="flex items-center gap-4">
+            <Link to="/" className="text-white/60 hover:text-white flex items-center gap-2 font-mono text-xs uppercase">
+                <ArrowUpRight size={16} /> Til Appen
+            </Link>
+            <button 
+            onClick={() => window.location.reload()} 
+            className="text-white/60 hover:text-white flex items-center gap-2 font-mono text-xs uppercase"
+            >
+            <LogOut size={16} /> Logg ut
+            </button>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-6 md:p-12 space-y-16">
@@ -453,6 +469,36 @@ export function AdminView() {
              <h3 className="font-mono text-xs uppercase text-royal/50 tracking-widest mb-2">Aktiviteter</h3>
              <p className="font-display font-bold text-4xl text-royal">{activities.length}</p>
           </div>
+        </div>
+
+        {/* SECTION: INFO SIDE REDIGERING */}
+        <div className="space-y-6">
+             <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+                <h2 className="font-display font-bold text-2xl text-royal uppercase">
+                    Administrer Innhold
+                </h2>
+            </div>
+            <p className="text-royal/60 text-sm max-w-2xl">
+                Klikk på en side for å gå til den og redigere innholdet. Se etter blyant-ikonet øverst til høyre på hver side.
+            </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {contentPages.map((page) => (
+                    <Link 
+                        key={page.path}
+                        to={page.path}
+                        className="bg-white p-4 border border-royal/10 hover:border-royal/40 hover:shadow-md transition-all group flex flex-col items-center justify-center text-center gap-2 h-32 relative"
+                    >
+                        {page.badge && (
+                            <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                                {page.badge}
+                            </span>
+                        )}
+                        <page.icon className="text-royal/40 group-hover:text-royal transition-colors" size={24} />
+                        <span className="font-mono text-xs uppercase tracking-widest text-royal">{page.title}</span>
+                    </Link>
+                ))}
+            </div>
         </div>
 
         {/* SECTION: DELTAKERE */}

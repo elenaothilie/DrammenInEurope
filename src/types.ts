@@ -3,6 +3,7 @@ export type Role = 'participant' | 'admin';
 export interface User {
   id: string;
   fullName: string;
+  displayName?: string;
   role: Role;
 }
 
@@ -21,20 +22,24 @@ export interface TripDay {
   description?: string;
   scheduleItems: ItineraryItem[];
   isElectionDay?: boolean; // If true, shows activity options
+  isChoiceDay?: boolean;
+  isLocked?: boolean;
+  choiceBlockId?: string;
+  sortOrder?: number;
 }
 
 export interface ActivityOption {
   id: string;
   title: string;
-  startTime: string;
-  endTime: string;
+  timeStart: string; // Changed from startTime to match store
+  timeEnd: string;   // Changed from endTime to match store
   location: string;
   meetingPoint: string;
-  travelTimeMin: number;
-  transportType: string;
+  transport: string; // Changed from transportType to match store
   description: string;
   tags: string[];
-  maxCapacity: number;
+  capacityMax: number; // Changed from maxCapacity to match store
+  sortOrder?: number;
 }
 
 export interface Signup {
@@ -42,4 +47,26 @@ export interface Signup {
   userId: string;
   timestamp: number;
   status: 'confirmed' | 'waitlist' | 'cancelled';
+}
+
+export interface InfoPage {
+  slug: string;
+  title: string;
+  content: string;
+  updatedAt?: string;
+}
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  message: string;
+  createdAt: string;
+  ratings?: {
+    overall: number;
+    hotel: number;
+    activities: number;
+    food: number;
+  };
+  highlights?: string;
+  improvements?: string;
 }

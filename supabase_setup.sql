@@ -44,42 +44,58 @@ create table if not exists signups (
   unique(user_id, activity_id)
 );
 
+-- New tables for subpages
+create table if not exists info_pages (
+  slug text primary key,
+  title text,
+  content text, -- Can be JSON or HTML
+  updated_at timestamptz default now()
+);
+
+create table if not exists feedback (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references profiles(id) on delete set null,
+  message text not null,
+  ratings jsonb,
+  highlights text,
+  improvements text,
+  created_at timestamptz default now()
+);
+
 -- Enable RLS
 alter table profiles enable row level security;
 alter table trip_days enable row level security;
 alter table activities enable row level security;
 alter table signups enable row level security;
+alter table info_pages enable row level security;
+alter table feedback enable row level security;
 
 -- Drop existing policies to avoid "policy already exists" errors
 drop policy if exists "Enable all access for profiles" on profiles;
 drop policy if exists "Enable all access for trip_days" on trip_days;
 drop policy if exists "Enable all access for activities" on activities;
 drop policy if exists "Enable all access for signups" on signups;
+drop policy if exists "Enable all access for info_pages" on info_pages;
+drop policy if exists "Enable all access for feedback" on feedback;
 
 -- Create policies
 create policy "Enable all access for profiles" on profiles for all using (true) with check (true);
 create policy "Enable all access for trip_days" on trip_days for all using (true) with check (true);
 create policy "Enable all access for activities" on activities for all using (true) with check (true);
 create policy "Enable all access for signups" on signups for all using (true) with check (true);
+create policy "Enable all access for info_pages" on info_pages for all using (true) with check (true);
+create policy "Enable all access for feedback" on feedback for all using (true) with check (true);
 
--- Optional: Seed Data (Uncomment if you want to insert sample data)
-/*
-insert into profiles (id, full_name, display_name, role) values
-('u1', 'Elena Svendsen', 'Elena S.', 'participant'),
-('u2', 'Jonas Berg', 'Jonas B.', 'participant'),
-('u3', 'Isak Håland', 'Isak H.', 'participant'),
-('u4', 'Maria Nilsen', 'Maria N.', 'participant');
-
-insert into trip_days (id, date, title, description, is_choice_day, schedule_items) values
-('d1', '2026-06-20', 'Dag 1: Ankomst & Velkomst', 'Vi lander i paradiset. Innsjekk og felles middag.', false, 
-'[{"time": "14:00", "activity": "Ankomst Gardermoen", "location": "Oppmøte ved tog"}, {"time": "18:00", "activity": "Landing i Nice", "location": "Terminal 1"}, {"time": "20:30", "activity": "Velkomstmiddag", "location": "Hotel Plaza"}]'),
-('d2', '2026-06-21', 'Dag 2: Utforsk Drammen (i Europa)', 'Valgfri aktivitetsdag! Velg hva du vil gjøre på formiddagen.', true, 
-'[{"time": "09:00", "activity": "Frokost", "location": "Hotellet"}, {"time": "10:00", "activity": "VALGFRI AKTIVITET", "location": "Ulike steder"}, {"time": "19:00", "activity": "Felles Pizza", "location": "Piazza del Popolo"}]'),
-('d3', '2026-06-22', 'Dag 3: Hjemreise', 'Takk for turen!', false, 
-'[{"time": "10:00", "activity": "Utsjekk"}, {"time": "12:00", "activity": "Buss til flyplassen"}]');
-
-insert into activities (id, title, time_start, time_end, location, meeting_point, transport, description, tags, capacity_max) values
-('act1', 'Via Ferrata Klatring', '10:00', '14:00', 'Fjellveggen Øst', 'Lobbyen', 'Minibuss (20 min)', 'For de som liker høyder og adrenalin.', ARRAY['Adrenalin', 'Fysisk', 'Utsikt'], 8),
-('act2', 'Byvandring & Gelato', '11:00', '13:00', 'Gamlebyen', 'Fontenen', 'Gange', 'En rolig tur gjennom historiske gater.', ARRAY['Rolig', 'Kultur', 'Mat'], 20),
-('act3', 'Strand & Volleyball', '10:30', '15:00', 'Blue Beach', 'Lobbyen', 'Trikk (10 min)', 'Vi reserverer en del av stranden.', ARRAY['Sosialt', 'Badetøy', 'Sport'], 15);
-*/
+-- Optional: Add columns if table already exists (migrations)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'feedback' and column_name = 'ratings') then
+    alter table feedback add column ratings jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'feedback' and column_name = 'highlights') then
+    alter table feedback add column highlights text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'feedback' and column_name = 'improvements') then
+    alter table feedback add column improvements text;
+  end if;
+end $$;
