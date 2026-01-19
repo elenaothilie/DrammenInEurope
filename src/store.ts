@@ -257,7 +257,11 @@ export const useStore = create<AppState>()(
       // -----------------------------------------------------------------------
       toggleActivitySignup: async (activityId, _choiceBlockId) => {
         const { currentUser, signups, activities, days } = get();
-        if (!currentUser) return;
+        
+        if (!currentUser) {
+            alert("Du er ikke logget inn. En administrator må opprette deltakere.");
+            return;
+        }
 
         // Optimistic check
         const activity = activities.find(a => a.id === activityId);
@@ -273,7 +277,7 @@ export const useStore = create<AppState>()(
         const existingSignup = signups.find(s => s.userId === currentUser.id && s.activityId === activityId);
 
         if (existingSignup) {
-          // DELETE
+          // DELETE (Meld av)
           // Optimistic Update
           set({ signups: signups.filter(s => s.userId !== currentUser.id || s.activityId !== activityId) });
           
@@ -283,22 +287,26 @@ export const useStore = create<AppState>()(
             .match({ user_id: currentUser.id, activity_id: activityId });
             
           if (error) {
-             console.error(error);
-             // Revert logic here if needed, or just re-fetch
-             get().fetchData();
+             console.error("Signup delete error:", error);
+             alert("Feil ved avmelding: " + error.message);
+             get().fetchData(); // Revert
           }
         } else {
-          // INSERT
+          // INSERT (Meld på)
           // Check capacity locally first
           const currentCount = signups.filter(s => s.activityId === activityId).length;
           if (currentCount >= activity.capacityMax) {
-             alert("Fullt!");
+             alert("Beklager, denne aktiviteten er full!");
              return;
           }
 
-          // Conflicting signups? Ideally should be handled by DB constraints or explicit logic
-          // For now, let's just insert. If we want to enforce single choice, we should delete others first.
-          
+          // Handle Switching: Remove other signups for any activity in the list
+          // (Assuming all activities are mutually exclusive choices for the same time slot)
+          const allActivityIds = activities.map(a => a.id);
+          const idsToRemove = signups
+            .filter(s => s.userId === currentUser.id && allActivityIds.includes(s.activityId))
+            .map(s => s.activityId);
+
           // Optimistic Update
           const newSignup: Signup = {
              activityId, 
@@ -306,14 +314,32 @@ export const useStore = create<AppState>()(
              status: 'confirmed', 
              timestamp: Date.now() 
           };
-          set({ signups: [...signups, newSignup] });
+          
+          set({ 
+              signups: [
+                  ...signups.filter(s => !(s.userId === currentUser.id && allActivityIds.includes(s.activityId))),
+                  newSignup
+              ] 
+          });
 
+          // DB Operations
+          // 1. Delete conflicting signups
+          if (idsToRemove.length > 0) {
+              await supabase
+                .from('signups')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .in('activity_id', idsToRemove);
+          }
+
+          // 2. Insert new signup
           const { error } = await supabase
             .from('signups')
             .insert({ user_id: currentUser.id, activity_id: activityId, status: 'confirmed' });
 
           if (error) {
-             console.error(error);
+             console.error("Signup insert error:", error);
+             alert("Feil ved påmelding: " + error.message);
              get().fetchData(); // Revert
           }
         }
