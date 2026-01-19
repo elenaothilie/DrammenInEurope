@@ -70,3 +70,22 @@ export interface Feedback {
   highlights?: string;
   improvements?: string;
 }
+
+export interface Quote {
+  id: string;
+  text: string;
+  author: string; // The person quoted
+  submittedBy: string; // userId
+  createdAt: string;
+  likes: number;
+}
+
+export interface Photo {
+  id: string;
+  url: string;
+  caption?: string;
+  uploadedBy: string; // userId
+  createdAt: string;
+  width?: number;
+  height?: number;
+}

@@ -62,6 +62,27 @@ create table if not exists feedback (
   created_at timestamptz default now()
 );
 
+-- Quotes Table
+create table if not exists quotes (
+  id uuid primary key default uuid_generate_v4(),
+  text text not null,
+  author text not null,
+  submitted_by uuid references profiles(id) on delete set null,
+  likes int default 0,
+  created_at timestamptz default now()
+);
+
+-- Photos Table
+create table if not exists photos (
+  id uuid primary key default uuid_generate_v4(),
+  url text not null,
+  caption text,
+  uploaded_by uuid references profiles(id) on delete set null,
+  width int,
+  height int,
+  created_at timestamptz default now()
+);
+
 -- Enable RLS
 alter table profiles enable row level security;
 alter table trip_days enable row level security;
@@ -69,6 +90,8 @@ alter table activities enable row level security;
 alter table signups enable row level security;
 alter table info_pages enable row level security;
 alter table feedback enable row level security;
+alter table quotes enable row level security;
+alter table photos enable row level security;
 
 -- Drop existing policies to avoid "policy already exists" errors
 drop policy if exists "Enable all access for profiles" on profiles;
@@ -77,6 +100,8 @@ drop policy if exists "Enable all access for activities" on activities;
 drop policy if exists "Enable all access for signups" on signups;
 drop policy if exists "Enable all access for info_pages" on info_pages;
 drop policy if exists "Enable all access for feedback" on feedback;
+drop policy if exists "Enable all access for quotes" on quotes;
+drop policy if exists "Enable all access for photos" on photos;
 
 -- Create policies
 create policy "Enable all access for profiles" on profiles for all using (true) with check (true);
@@ -85,6 +110,8 @@ create policy "Enable all access for activities" on activities for all using (tr
 create policy "Enable all access for signups" on signups for all using (true) with check (true);
 create policy "Enable all access for info_pages" on info_pages for all using (true) with check (true);
 create policy "Enable all access for feedback" on feedback for all using (true) with check (true);
+create policy "Enable all access for quotes" on quotes for all using (true) with check (true);
+create policy "Enable all access for photos" on photos for all using (true) with check (true);
 
 -- Optional: Add columns if table already exists (migrations)
 do $$
@@ -99,3 +126,7 @@ begin
     alter table feedback add column improvements text;
   end if;
 end $$;
+
+-- STORAGE SETUP INSTRUCTIONS:
+-- 1. Create a public bucket named 'photos' in Supabase Storage.
+-- 2. Add policy to allow public access (SELECT, INSERT) to 'photos' bucket.

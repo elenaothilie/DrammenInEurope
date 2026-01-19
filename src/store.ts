@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from './lib/supabaseClient';
-import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback } from './types';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo } from './types';
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -16,6 +16,8 @@ interface AppState {
   signups: Signup[];
   infoPages: InfoPage[];
   feedbacks: Feedback[];
+  quotes: Quote[];
+  photos: Photo[];
   isLoading: boolean;
   error: string | null;
   
@@ -51,6 +53,10 @@ interface AppState {
   // Feedback
   submitFeedback: (message: string, ratings?: Feedback['ratings'], highlights?: string, improvements?: string) => Promise<void>;
 
+  // Photodrop
+  addQuote: (text: string, author: string) => Promise<void>;
+  uploadPhoto: (file: File, caption?: string) => Promise<void>;
+
   // User Management
   addUser: (name: string) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
@@ -77,6 +83,8 @@ export const useStore = create<AppState>()(
       signups: [],
       infoPages: [],
       feedbacks: [],
+      quotes: [],
+      photos: [],
       isLoading: false,
       error: null,
 
@@ -130,14 +138,18 @@ export const useStore = create<AppState>()(
             { data: actsData, error: actsError },
             { data: signupsData, error: signupsError },
             { data: infoData, error: infoError },
-            { data: feedbackData, error: feedbackError }
+            { data: feedbackData, error: feedbackError },
+            { data: quotesData, error: quotesError },
+            { data: photosData, error: photosError }
           ] = await Promise.all([
             supabase.from('profiles').select('*'),
             supabase.from('trip_days').select('*').order('sort_order', { ascending: true }),
             supabase.from('activities').select('*').order('sort_order', { ascending: true }),
             supabase.from('signups').select('*'),
             supabase.from('info_pages').select('*'),
-            supabase.from('feedback').select('*').order('created_at', { ascending: false })
+            supabase.from('feedback').select('*').order('created_at', { ascending: false }),
+            supabase.from('quotes').select('*').order('created_at', { ascending: false }),
+            supabase.from('photos').select('*').order('created_at', { ascending: false })
           ]);
 
           if (usersError) throw usersError;
@@ -205,7 +217,26 @@ export const useStore = create<AppState>()(
               createdAt: f.created_at
           }));
 
-          set({ users, days, activities, signups, infoPages, feedbacks, isLoading: false });
+          const quotes: Quote[] = (quotesData || []).map((q: any) => ({
+              id: q.id,
+              text: q.text,
+              author: q.author,
+              submittedBy: q.submitted_by,
+              createdAt: q.created_at,
+              likes: q.likes || 0
+          }));
+
+          const photos: Photo[] = (photosData || []).map((p: any) => ({
+              id: p.id,
+              url: p.url,
+              caption: p.caption,
+              uploadedBy: p.uploaded_by,
+              createdAt: p.created_at,
+              width: p.width,
+              height: p.height
+          }));
+
+          set({ users, days, activities, signups, infoPages, feedbacks, quotes, photos, isLoading: false });
 
           // Auto-login first user if none selected (dev convenience)
           if (!get().currentUser && users.length > 0) {
@@ -641,7 +672,88 @@ export const useStore = create<AppState>()(
               console.error("Feedback submission error:", error);
               if (error) alert("Kunne ikke sende feedback: " + error.message);
           }
+      },
+
+      // -----------------------------------------------------------------------
+      // PHOTODROP ACTIONS
+      // -----------------------------------------------------------------------
+
+      addQuote: async (text, author) => {
+          const { currentUser } = get();
+          const userId = currentUser ? currentUser.id : null;
+          
+          const { data, error } = await supabase.from('quotes').insert({
+              text,
+              author,
+              submitted_by: userId
+          }).select().single();
+          
+          if (data && !error) {
+              const newQuote: Quote = {
+                  id: data.id,
+                  text: data.text,
+                  author: data.author,
+                  submittedBy: data.submitted_by,
+                  createdAt: data.created_at,
+                  likes: 0
+              };
+              set(state => ({ quotes: [newQuote, ...state.quotes] }));
+          } else if (error) {
+            console.error("Quote submit error:", error);
+            alert("Kunne ikke sende quote: " + error.message);
+          }
+      },
+
+      uploadPhoto: async (file, caption) => {
+          const { currentUser } = get();
+          if (!currentUser) {
+            alert("Du må være logget inn for å laste opp bilder.");
+            return;
+          }
+
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          // Upload to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+              .from('photos')
+              .upload(filePath, file);
+
+          if (uploadError) {
+              console.error('Upload error:', uploadError);
+              alert("Feil ved opplasting av bilde: " + uploadError.message);
+              return;
+          }
+
+          // Get Public URL
+          const { data: urlData } = supabase.storage.from('photos').getPublicUrl(filePath);
+          const publicUrl = urlData.publicUrl;
+
+          // Insert into DB
+          const { data, error } = await supabase.from('photos').insert({
+              url: publicUrl,
+              caption,
+              uploaded_by: currentUser.id
+          }).select().single();
+
+          if (data && !error) {
+               const newPhoto: Photo = {
+                   id: data.id,
+                   url: data.url,
+                   caption: data.caption,
+                   uploadedBy: data.uploaded_by,
+                   createdAt: data.created_at,
+                   width: data.width,
+                   height: data.height
+               };
+               set(state => ({ photos: [newPhoto, ...state.photos] }));
+          } else if (error) {
+            console.error("Photo DB error:", error);
+            alert("Feil ved lagring av bilde-data: " + error.message);
+          }
       }
+
     }),
     {
       name: 'travel-app-storage',
