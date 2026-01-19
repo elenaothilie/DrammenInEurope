@@ -1,5 +1,5 @@
 import { X, Users } from 'lucide-react';
-import type { User } from '../store';
+import type { User } from '../types';
 import { useStore } from '../store';
 
 interface SignupModalProps {
@@ -16,7 +16,7 @@ export function SignupModal({ isOpen, onClose, activityId, activityTitle }: Sign
     .filter(s => s.activityId === activityId)
     .map(s => users.find(u => u.id === s.userId))
     .filter((u): u is User => !!u)
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    .sort((a, b) => (a.displayName || a.fullName).localeCompare(b.displayName || b.fullName));
 
   if (!isOpen) return null;
 
@@ -52,7 +52,7 @@ export function SignupModal({ isOpen, onClose, activityId, activityTitle }: Sign
               {signedUpUsers.map(user => (
                 <li key={user.id} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-royal/10 text-royal flex items-center justify-center font-display font-bold text-xs border border-royal/20">
-                    {user.displayName.charAt(0)}
+                    {(user.displayName || user.fullName).charAt(0)}
                   </div>
                   <span className="font-sans font-medium text-royal">
                     {/* Admin sees full name, Participant sees Display Name */}

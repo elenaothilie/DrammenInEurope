@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TripDay } from '../store';
+import type { TripDay } from '../types';
 import { useStore } from '../store';
 import { ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import clsx from 'clsx';

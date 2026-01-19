@@ -1,5 +1,5 @@
 import { MapPin, Users, Bus, Check } from 'lucide-react';
-import type { ActivityOption } from '../store';
+import type { ActivityOption } from '../types';
 import { useStore } from '../store';
 import { SignupModal } from './SignupModal';
 import { useState } from 'react';

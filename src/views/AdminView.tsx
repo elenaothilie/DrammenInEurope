@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import type { TripDay, ActivityOption, Signup } from '../store';
+import type { TripDay, ActivityOption, Signup } from '../types';
 import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
