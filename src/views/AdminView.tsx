@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../store';
 import type { TripDay, ActivityOption, Signup } from '../types';
-import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight, Download } from 'lucide-react';
+import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight, Download, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
+import * as XLSX from 'xlsx';
 
 export function AdminView() {
   const { 
@@ -13,7 +14,7 @@ export function AdminView() {
     updateActivity, addActivity, removeActivity,
     addDay, removeDay, updateSignupStatus,
     reorderDays, reorderActivities, reorderScheduleItems,
-    addUser, removeUser, updateUser,
+    addUser, removeUser, updateUser, importParticipants,
     exportAdminData, exportAllData
   } = useStore();
   
@@ -22,6 +23,8 @@ export function AdminView() {
   const [error, setError] = useState(false);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   const [draggedDayId, setDraggedDayId] = useState<string | null>(null);
   const [draggedActivityId, setDraggedActivityId] = useState<string | null>(null);
@@ -42,6 +45,126 @@ export function AdminView() {
     if (!loginAdmin(password)) {
       setError(true);
     }
+  };
+
+  const parseBirthDate = (value: unknown) => {
+    if (value instanceof Date) {
+      return value.toISOString().split('T')[0];
+    }
+
+    if (typeof value === 'number') {
+      const parsed = XLSX.SSF.parse_date_code(value);
+      if (parsed && parsed.y && parsed.m && parsed.d) {
+        const month = String(parsed.m).padStart(2, '0');
+        const day = String(parsed.d).padStart(2, '0');
+        return `${parsed.y}-${month}-${day}`;
+      }
+      return undefined;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return undefined;
+      const parts = trimmed.split(/[.\-/]/).map((part) => part.trim());
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          const [year, month, day] = parts;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        const [day, month, year] = parts;
+        if (year.length === 4) {
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+    }
+
+    return undefined;
+  };
+
+  const calculateAge = (birthDate?: string, fallbackAge?: number) => {
+    if (!birthDate) return fallbackAge ?? '';
+    const [year, month, day] = birthDate.split('-').map((part) => Number(part));
+    if (!year || !month || !day) return fallbackAge ?? '';
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    const hasHadBirthday =
+      today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
+    if (!hasHadBirthday) age -= 1;
+    return age;
+  };
+
+  const formatNameFromImport = (rawName: string) => {
+    const trimmed = rawName.trim();
+    if (!trimmed) return '';
+    if (!trimmed.includes(',')) return trimmed;
+    const [surname, firstNames] = trimmed.split(',').map((part) => part.trim());
+    if (!surname) return firstNames;
+    if (!firstNames) return surname;
+    return `${firstNames} ${surname}`;
+  };
+
+  const normalizeHeader = (header: string) =>
+    header
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/ø/g, 'o')
+      .replace(/æ/g, 'ae')
+      .replace(/å/g, 'a');
+
+  const getColumnIndex = (headers: string[], options: string[]) => {
+    const normalized = headers.map(normalizeHeader);
+    for (const option of options) {
+      const idx = normalized.indexOf(normalizeHeader(option));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const handleImportFile = async (file: File) => {
+    setImportError(null);
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as Array<Array<unknown>>;
+
+    if (!rows.length) {
+      setImportError('Filen er tom.');
+      return;
+    }
+
+    const headers = rows[0].map((value) => String(value || '').trim());
+    const nameIndex = getColumnIndex(headers, ['Navn', 'Name']);
+    const birthDateIndex = getColumnIndex(headers, ['Fødselsdato', 'Foedselsdato', 'Fodselsdato', 'Birthdate', 'DateOfBirth', 'Dob']);
+    const phoneIndex = getColumnIndex(headers, ['Mobiltelefon', 'Telefon', 'Phone', 'Mobile']);
+    const emailIndex = getColumnIndex(headers, ['Epostadresse', 'E-postadresse', 'Epost', 'Email', 'E-mail']);
+
+    if (nameIndex === -1) {
+      setImportError('Fant ikke kolonnen "Navn".');
+      return;
+    }
+
+    const participants = rows.slice(1).map((row) => {
+      const rawName = String(row[nameIndex] || '').trim();
+      const fullName = formatNameFromImport(rawName);
+      const birthDate = birthDateIndex !== -1 ? parseBirthDate(row[birthDateIndex]) : undefined;
+      const email = emailIndex !== -1 ? String(row[emailIndex] || '').trim() || undefined : undefined;
+      const phone = phoneIndex !== -1 ? String(row[phoneIndex] || '').trim() || undefined : undefined;
+      return {
+        fullName,
+        displayName: fullName,
+        email,
+        phone,
+        birthDate: birthDate || undefined
+      };
+    }).filter((participant) => participant.fullName);
+
+    if (participants.length === 0) {
+      setImportError('Fant ingen deltakere å importere.');
+      return;
+    }
+
+    await importParticipants(participants);
   };
 
   if (!isAdmin) {
@@ -573,7 +696,26 @@ export function AdminView() {
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Administrer Deltakere
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                handleImportFile(file);
+                                e.currentTarget.value = '';
+                            }
+                        }}
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 border border-royal/20 text-royal px-4 py-2 text-xs font-mono uppercase font-bold hover:border-royal/60 transition-colors"
+                    >
+                        <Upload size={14} /> Importer
+                    </button>
                      <input 
                         className="w-48 border-b border-royal/20 bg-transparent text-sm py-1 focus:border-royal outline-none"
                         placeholder="Navn på ny deltaker..."
@@ -599,13 +741,21 @@ export function AdminView() {
                 </div>
             </div>
 
+            {importError && (
+                <div className="text-red-500 text-xs font-mono uppercase">
+                    {importError}
+                </div>
+            )}
             <div className="bg-white border border-royal/10 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto max-h-96 overflow-y-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-royal/5 font-mono text-[10px] uppercase text-royal/60 sticky top-0 z-10">
                             <tr>
                                 <th className="py-3 pl-6">Navn</th>
-                                <th className="py-3">Visningsnavn</th>
+                                <th className="py-3">E-post</th>
+                                <th className="py-3">Telefon</th>
+                                <th className="py-3">Fødselsdato</th>
+                                <th className="py-3">Alder</th>
                                 <th className="py-3">Rolle</th>
                                 <th className="py-3 text-right pr-6">Handling</th>
                             </tr>
@@ -614,26 +764,49 @@ export function AdminView() {
                             {users.map(user => (
                                 <tr key={user.id} className="hover:bg-royal/5 group">
                                     <td className="py-3 pl-6 font-medium text-royal">
-                                        <input 
+                                        {user.fullName}
+                                    </td>
+                                    <td className="py-3 text-royal/80">
+                                        <input
                                             className="bg-transparent border-b border-transparent focus:border-royal outline-none w-full"
-                                            defaultValue={user.fullName}
+                                            defaultValue={user.email || ''}
                                             onBlur={(e) => {
-                                                if (e.target.value !== user.fullName) {
-                                                    updateUser(user.id, { fullName: e.target.value });
+                                                if (e.target.value !== (user.email || '')) {
+                                                    updateUser(user.id, { email: e.target.value });
                                                 }
                                             }}
+                                            placeholder="E-post"
+                                            type="email"
                                         />
                                     </td>
                                     <td className="py-3 text-royal/80">
-                                         <input 
+                                        <input
                                             className="bg-transparent border-b border-transparent focus:border-royal outline-none w-full"
-                                            defaultValue={user.displayName}
+                                            defaultValue={user.phone || ''}
                                             onBlur={(e) => {
-                                                if (e.target.value !== user.displayName) {
-                                                    updateUser(user.id, { displayName: e.target.value });
+                                                if (e.target.value !== (user.phone || '')) {
+                                                    updateUser(user.id, { phone: e.target.value });
                                                 }
                                             }}
+                                            placeholder="Telefon"
+                                            type="tel"
                                         />
+                                    </td>
+                                    <td className="py-3 text-royal/80">
+                                        <input
+                                            className="bg-transparent border-b border-transparent focus:border-royal outline-none w-32"
+                                            defaultValue={user.birthDate || ''}
+                                            onBlur={(e) => {
+                                                if (e.target.value !== (user.birthDate || '')) {
+                                                    updateUser(user.id, { birthDate: e.target.value || undefined });
+                                                }
+                                            }}
+                                            placeholder="YYYY-MM-DD"
+                                            type="date"
+                                        />
+                                    </td>
+                                    <td className="py-3 text-royal/80 font-mono text-xs">
+                                        {calculateAge(user.birthDate, user.age)}
                                     </td>
                                     <td className="py-3 font-mono text-xs text-royal/60 uppercase">
                                         {user.role}
@@ -655,7 +828,7 @@ export function AdminView() {
                             ))}
                             {users.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="py-8 text-center text-royal/40 italic">
+                                    <td colSpan={7} className="py-8 text-center text-royal/40 italic">
                                         Ingen deltakere registrert.
                                     </td>
                                 </tr>

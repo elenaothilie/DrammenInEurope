@@ -5,6 +5,10 @@ export interface User {
   fullName: string;
   displayName?: string;
   role: Role;
+  email?: string;
+  phone?: string;
+  age?: number;
+  birthDate?: string;
 }
 
 export interface ItineraryItem {

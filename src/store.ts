@@ -4,6 +4,14 @@ import { supabase } from './lib/supabaseClient';
 import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo } from './types';
 
 type ExportKind = 'users' | 'days' | 'activities' | 'signups' | 'infoPages' | 'feedbacks' | 'quotes' | 'photos';
+type ParticipantImport = {
+  fullName: string;
+  displayName?: string;
+  email?: string;
+  phone?: string;
+  birthDate?: string;
+  role?: Role;
+};
 
 const csvEscape = (value: unknown) => {
   if (value === null || value === undefined) return '""';
@@ -27,6 +35,28 @@ const downloadFile = (filename: string, content: string, mimeType: string) => {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+};
+
+const formatSurnameFirst = (fullName: string) => {
+  const trimmed = fullName.trim();
+  if (!trimmed || trimmed.includes(',')) return trimmed;
+  const parts = trimmed.split(/\s+/);
+  if (parts.length < 2) return trimmed;
+  const surname = parts[parts.length - 1];
+  const firstNames = parts.slice(0, -1).join(' ');
+  return `${surname}, ${firstNames}`;
+};
+
+const calculateAge = (birthDate?: string) => {
+  if (!birthDate) return undefined;
+  const [year, month, day] = birthDate.split('-').map((part) => Number(part));
+  if (!year || !month || !day) return undefined;
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const hasHadBirthday =
+    today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
+  if (!hasHadBirthday) age -= 1;
+  return age;
 };
 
 // -----------------------------------------------------------------------------
@@ -87,6 +117,7 @@ interface AppState {
   addUser: (name: string) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
   updateUser: (userId: string, data: Partial<User>) => Promise<void>;
+  importParticipants: (participants: ParticipantImport[]) => Promise<void>;
   
   // Placeholder
   adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
@@ -149,6 +180,10 @@ export const useStore = create<AppState>()(
           if (data.fullName) dbData.full_name = data.fullName;
           if (data.displayName) dbData.display_name = data.displayName;
           if (data.role) dbData.role = data.role;
+          if (data.email !== undefined) dbData.email = data.email;
+          if (data.phone !== undefined) dbData.phone = data.phone;
+          if (data.age !== undefined) dbData.age = data.age;
+          if (data.birthDate !== undefined) dbData.birth_date = data.birthDate;
           
           if (Object.keys(dbData).length > 0) {
               await supabase.from('profiles').update(dbData).eq('id', userId);
@@ -196,7 +231,11 @@ export const useStore = create<AppState>()(
             id: p.id,
             fullName: p.full_name,
             displayName: p.display_name,
-            role: p.role as Role
+            role: p.role as Role,
+            email: p.email,
+            phone: p.phone,
+            age: p.age,
+            birthDate: p.birth_date
           }));
 
           const days: TripDay[] = (daysData || []).map((d: any) => ({
@@ -418,6 +457,44 @@ export const useStore = create<AppState>()(
 
       adminMoveUser: () => { console.log("Not impl"); },
 
+      importParticipants: async (participants) => {
+        if (!get().isAdmin) {
+          alert("Du må være admin for å importere deltakere.");
+          return;
+        }
+        if (participants.length === 0) return;
+
+        const rows = participants.map((participant) => ({
+          full_name: participant.fullName,
+          display_name: participant.displayName || participant.fullName,
+          role: participant.role || 'participant',
+          email: participant.email || null,
+          phone: participant.phone || null,
+          birth_date: participant.birthDate || null
+        }));
+
+        const { data, error } = await supabase.from('profiles').insert(rows).select();
+        if (error) {
+          console.error("Import participants error:", error);
+          alert("Kunne ikke importere deltakere: " + error.message);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const newUsers: User[] = data.map((p: any) => ({
+            id: p.id,
+            fullName: p.full_name,
+            displayName: p.display_name,
+            role: p.role as Role,
+            email: p.email,
+            phone: p.phone,
+            age: p.age,
+            birthDate: p.birth_date
+          }));
+          set(state => ({ users: [...state.users, ...newUsers] }));
+        }
+      },
+
       exportAdminData: (kind) => {
         if (!get().isAdmin) {
           alert("Du må være admin for å eksportere data.");
@@ -429,12 +506,13 @@ export const useStore = create<AppState>()(
 
         if (kind === 'users') {
           const rows = users.map((user) => ({
-            id: user.id,
-            fullName: user.fullName,
-            displayName: user.displayName,
-            role: user.role
+            Navn: formatSurnameFirst(user.fullName),
+            Alder: calculateAge(user.birthDate) ?? user.age ?? '',
+            Fødselsdato: user.birthDate || '',
+            Mobiltelefon: user.phone || '',
+            Epostadresse: user.email || ''
           }));
-          const csv = toCsv(['id', 'fullName', 'displayName', 'role'], rows);
+          const csv = toCsv(['Navn', 'Alder', 'Fødselsdato', 'Mobiltelefon', 'Epostadresse'], rows);
           downloadFile(`deltakere-${dateTag}.csv`, csv, 'text/csv;charset=utf-8');
           return;
         }
