@@ -192,6 +192,7 @@ export function AdminView() {
       return cleaned.trim();
     });
     const nameIndex = getIndexOrFallback(headers, ['Navn', 'Name'], 0);
+    const ageIndex = getIndexOrFallback(headers, ['Alder', 'Age'], 1);
     const birthDateIndex = getColumnIndex(headers, [
       'Fødselsdato',
       'Foedselsdato',
@@ -216,12 +217,15 @@ export function AdminView() {
       const birthDate = birthDateIndex !== -1 ? parseBirthDate(row[birthDateIndex]) : undefined;
       const email = emailIndex !== -1 ? String(row[emailIndex] || '').trim() || undefined : undefined;
       const phone = phoneIndex !== -1 ? String(row[phoneIndex] || '').trim() || undefined : undefined;
+      const ageValue = ageIndex !== -1 ? Number(String(row[ageIndex] || '').trim()) : undefined;
+      const age = Number.isFinite(ageValue) ? ageValue : undefined;
       return {
         fullName,
         displayName: fullName,
         email,
         phone,
-        birthDate: birthDate || undefined
+        birthDate: birthDate || undefined,
+        age
       };
     }).filter((participant): participant is NonNullable<typeof participant> => Boolean(participant));
 

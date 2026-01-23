@@ -10,6 +10,7 @@ type ParticipantImport = {
   email?: string;
   phone?: string;
   birthDate?: string;
+  age?: number;
   role?: Role;
 };
 
@@ -505,18 +506,19 @@ export const useStore = create<AppState>()(
         const allowEmail = await canUseColumn('email');
         const allowPhone = await canUseColumn('phone');
 
-        const rows = participants.map((participant) => ({
-          full_name: participant.fullName,
-          display_name: participant.displayName || participant.fullName,
-          role: participant.role || 'participant',
-          ...(allowEmail ? { email: participant.email || null } : {}),
-          ...(allowPhone ? { phone: participant.phone || null } : {}),
-          ...(allowBirthDate
-            ? { birth_date: participant.birthDate || null }
-            : allowAge
-              ? { age: calculateAge(participant.birthDate) ?? null }
-              : {})
-        }));
+        const rows = participants.map((participant) => {
+          const derivedAge = calculateAge(participant.birthDate);
+          const finalAge = participant.age ?? derivedAge ?? null;
+          return {
+            full_name: participant.fullName,
+            display_name: participant.displayName || participant.fullName,
+            role: participant.role || 'participant',
+            ...(allowEmail ? { email: participant.email || null } : {}),
+            ...(allowPhone ? { phone: participant.phone || null } : {}),
+            ...(allowBirthDate ? { birth_date: participant.birthDate || null } : {}),
+            ...(allowAge ? { age: finalAge } : {})
+          };
+        });
 
         const { data, error } = await supabase.from('profiles').insert(rows).select();
         if (error) {
