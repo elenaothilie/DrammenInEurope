@@ -119,6 +119,11 @@ export function AdminView() {
     return -1;
   };
 
+  const getIndexOrFallback = (headers: string[], options: string[], fallbackIndex: number) => {
+    const idx = getColumnIndex(headers, options);
+    return idx === -1 ? fallbackIndex : idx;
+  };
+
   const parseDelimitedText = (text: string, delimiter: string) => {
     const rows: Array<Array<string>> = [];
     const lines = text.split(/\r?\n/).filter((line) => line.length > 0);
@@ -186,7 +191,7 @@ export function AdminView() {
       const cleaned = index === 0 ? raw.replace(/^\uFEFF/, '') : raw;
       return cleaned.trim();
     });
-    const nameIndex = getColumnIndex(headers, ['Navn', 'Name']);
+    const nameIndex = getIndexOrFallback(headers, ['Navn', 'Name'], 0);
     const birthDateIndex = getColumnIndex(headers, [
       'Fødselsdato',
       'Foedselsdato',
@@ -197,17 +202,17 @@ export function AdminView() {
       'DateOfBirth',
       'Dob'
     ]);
-    const phoneIndex = getColumnIndex(headers, ['Mobiltelefon', 'Telefon', 'Phone', 'Mobile']);
-    const emailIndex = getColumnIndex(headers, ['Epostadresse', 'E-postadresse', 'Epost', 'Email', 'E-mail']);
-
-    if (nameIndex === -1) {
-      setImportError('Fant ikke kolonnen "Navn".');
-      return;
-    }
+    const phoneIndex = getIndexOrFallback(headers, ['Mobiltelefon', 'Telefon', 'Phone', 'Mobile'], 3);
+    const emailIndex = getIndexOrFallback(headers, ['Epostadresse', 'E-postadresse', 'Epost', 'Email', 'E-mail'], 4);
 
     const participants = rows.slice(1).map((row) => {
+      const hasAnyData = row.some((value) => String(value || '').trim() !== '');
+      if (!hasAnyData) return null;
+
       const rawName = String(row[nameIndex] || '').trim();
       const fullName = formatNameFromImport(rawName);
+      if (!fullName) return null;
+
       const birthDate = birthDateIndex !== -1 ? parseBirthDate(row[birthDateIndex]) : undefined;
       const email = emailIndex !== -1 ? String(row[emailIndex] || '').trim() || undefined : undefined;
       const phone = phoneIndex !== -1 ? String(row[phoneIndex] || '').trim() || undefined : undefined;
@@ -218,7 +223,7 @@ export function AdminView() {
         phone,
         birthDate: birthDate || undefined
       };
-    }).filter((participant) => participant.fullName);
+    }).filter((participant): participant is NonNullable<typeof participant> => Boolean(participant));
 
     if (participants.length === 0) {
       setImportError('Fant ingen deltakere å importere.');

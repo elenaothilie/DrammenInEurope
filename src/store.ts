@@ -59,32 +59,19 @@ const calculateAge = (birthDate?: string) => {
   return age;
 };
 
-let birthDateColumnAvailable: boolean | null = null;
-const canUseBirthDateColumn = async () => {
-  if (birthDateColumnAvailable !== null) return birthDateColumnAvailable;
-  const { error } = await supabase.from('profiles').select('birth_date').limit(1);
-  if (error) {
-    birthDateColumnAvailable = false;
-    return false;
-  }
-  birthDateColumnAvailable = true;
-  return true;
+const columnAvailability: Record<'birth_date' | 'age' | 'email' | 'phone', boolean | null> = {
+  birth_date: null,
+  age: null,
+  email: null,
+  phone: null
 };
 
-let ageColumnAvailable: boolean | null = null;
-const canUseAgeColumn = async () => {
-  if (ageColumnAvailable !== null) return ageColumnAvailable;
-  const { error } = await supabase.from('profiles').select('age').limit(1);
-  if (error) {
-    ageColumnAvailable = false;
-    return false;
-  }
-  ageColumnAvailable = true;
-  return true;
+const canUseColumn = async (column: keyof typeof columnAvailability) => {
+  if (columnAvailability[column] !== null) return columnAvailability[column] as boolean;
+  const { error } = await supabase.from('profiles').select(column).limit(1);
+  columnAvailability[column] = !error;
+  return !error;
 };
-
-let warnedMissingBirthDate = false;
-let warnedMissingAge = false;
 
 // -----------------------------------------------------------------------------
 // TYPES
@@ -207,30 +194,27 @@ export const useStore = create<AppState>()(
           if (data.fullName) dbData.full_name = data.fullName;
           if (data.displayName) dbData.display_name = data.displayName;
           if (data.role) dbData.role = data.role;
-          if (data.email !== undefined) dbData.email = data.email;
-          if (data.phone !== undefined) dbData.phone = data.phone;
+          if (data.email !== undefined) {
+            if (await canUseColumn('email')) {
+              dbData.email = data.email;
+            }
+          }
+          if (data.phone !== undefined) {
+            if (await canUseColumn('phone')) {
+              dbData.phone = data.phone;
+            }
+          }
           if (data.age !== undefined) {
-            const allowAge = await canUseAgeColumn();
-            if (allowAge) {
+            if (await canUseColumn('age')) {
               dbData.age = data.age;
-            } else if (!warnedMissingAge) {
-              warnedMissingAge = true;
-              alert("Alder-feltet finnes ikke i databasen. Alder lagres ikke.");
             }
           }
           if (data.birthDate !== undefined) {
-            const allowBirthDate = await canUseBirthDateColumn();
-            if (allowBirthDate) {
+            if (await canUseColumn('birth_date')) {
               dbData.birth_date = data.birthDate;
-            } else {
-              const allowAge = await canUseAgeColumn();
+            } else if (await canUseColumn('age')) {
               const derivedAge = calculateAge(data.birthDate);
-              if (allowAge && derivedAge !== undefined) {
-                dbData.age = derivedAge;
-              } else if (!warnedMissingBirthDate) {
-                warnedMissingBirthDate = true;
-                alert("Fødselsdato-feltet finnes ikke i databasen. Alder lagres ikke.");
-              }
+              if (derivedAge !== undefined) dbData.age = derivedAge;
             }
           }
           
@@ -516,15 +500,17 @@ export const useStore = create<AppState>()(
           return;
         }
         if (participants.length === 0) return;
-        const allowBirthDate = await canUseBirthDateColumn();
-        const allowAge = await canUseAgeColumn();
+        const allowBirthDate = await canUseColumn('birth_date');
+        const allowAge = await canUseColumn('age');
+        const allowEmail = await canUseColumn('email');
+        const allowPhone = await canUseColumn('phone');
 
         const rows = participants.map((participant) => ({
           full_name: participant.fullName,
           display_name: participant.displayName || participant.fullName,
           role: participant.role || 'participant',
-          email: participant.email || null,
-          phone: participant.phone || null,
+          ...(allowEmail ? { email: participant.email || null } : {}),
+          ...(allowPhone ? { phone: participant.phone || null } : {}),
           ...(allowBirthDate
             ? { birth_date: participant.birthDate || null }
             : allowAge
@@ -553,10 +539,6 @@ export const useStore = create<AppState>()(
           set(state => ({ users: [...state.users, ...newUsers] }));
         }
 
-        if (!allowBirthDate && !allowAge && !warnedMissingBirthDate) {
-          warnedMissingBirthDate = true;
-          alert("Fødselsdato- og alder-feltet finnes ikke i databasen. Import fullført uten alder.");
-        }
       },
 
       exportAdminData: (kind) => {
