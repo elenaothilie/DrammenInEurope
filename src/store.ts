@@ -59,6 +59,18 @@ const calculateAge = (birthDate?: string) => {
   return age;
 };
 
+let birthDateColumnAvailable: boolean | null = null;
+const canUseBirthDateColumn = async () => {
+  if (birthDateColumnAvailable !== null) return birthDateColumnAvailable;
+  const { error } = await supabase.from('profiles').select('birth_date').limit(1);
+  if (error) {
+    birthDateColumnAvailable = false;
+    return false;
+  }
+  birthDateColumnAvailable = true;
+  return true;
+};
+
 // -----------------------------------------------------------------------------
 // TYPES
 // -----------------------------------------------------------------------------
@@ -183,22 +195,19 @@ export const useStore = create<AppState>()(
           if (data.email !== undefined) dbData.email = data.email;
           if (data.phone !== undefined) dbData.phone = data.phone;
           if (data.age !== undefined) dbData.age = data.age;
-          if (data.birthDate !== undefined) dbData.birth_date = data.birthDate;
+          if (data.birthDate !== undefined) {
+            const allowBirthDate = await canUseBirthDateColumn();
+            if (allowBirthDate) {
+              dbData.birth_date = data.birthDate;
+            } else {
+              const derivedAge = calculateAge(data.birthDate);
+              if (derivedAge !== undefined) dbData.age = derivedAge;
+            }
+          }
           
           if (Object.keys(dbData).length > 0) {
               const { error } = await supabase.from('profiles').update(dbData).eq('id', userId);
-              if (error && dbData.birth_date && error.message?.includes("birth_date")) {
-                  const fallbackData = { ...dbData };
-                  delete fallbackData.birth_date;
-                  if (data.birthDate !== undefined) {
-                    const derivedAge = calculateAge(data.birthDate);
-                    if (derivedAge !== undefined) fallbackData.age = derivedAge;
-                  }
-                  if (Object.keys(fallbackData).length > 0) {
-                    await supabase.from('profiles').update(fallbackData).eq('id', userId);
-                  }
-                  alert("Fødselsdato-feltet finnes ikke i databasen. Lagret alder i stedet.");
-              } else if (error) {
+              if (error) {
                   console.error("User update error:", error);
                   alert("Kunne ikke oppdatere deltaker: " + error.message);
               }
@@ -478,6 +487,7 @@ export const useStore = create<AppState>()(
           return;
         }
         if (participants.length === 0) return;
+        const allowBirthDate = await canUseBirthDateColumn();
 
         const rows = participants.map((participant) => ({
           full_name: participant.fullName,
@@ -485,45 +495,12 @@ export const useStore = create<AppState>()(
           role: participant.role || 'participant',
           email: participant.email || null,
           phone: participant.phone || null,
-          birth_date: participant.birthDate || null
+          ...(allowBirthDate
+            ? { birth_date: participant.birthDate || null }
+            : { age: calculateAge(participant.birthDate) ?? null })
         }));
 
         const { data, error } = await supabase.from('profiles').insert(rows).select();
-        if (error && error.message?.includes("birth_date")) {
-          const fallbackRows = participants.map((participant) => ({
-            full_name: participant.fullName,
-            display_name: participant.displayName || participant.fullName,
-            role: participant.role || 'participant',
-            email: participant.email || null,
-            phone: participant.phone || null,
-            age: calculateAge(participant.birthDate) ?? null
-          }));
-
-          const fallbackResult = await supabase.from('profiles').insert(fallbackRows).select();
-          if (fallbackResult.error) {
-            console.error("Import participants error:", fallbackResult.error);
-            alert("Kunne ikke importere deltakere: " + fallbackResult.error.message);
-            return;
-          }
-
-          if (fallbackResult.data && fallbackResult.data.length > 0) {
-            const newUsers: User[] = fallbackResult.data.map((p: any) => ({
-              id: p.id,
-              fullName: p.full_name,
-              displayName: p.display_name,
-              role: p.role as Role,
-              email: p.email,
-              phone: p.phone,
-              age: p.age,
-              birthDate: p.birth_date
-            }));
-            set(state => ({ users: [...state.users, ...newUsers] }));
-          }
-
-          alert("Fødselsdato-feltet finnes ikke i databasen. Lagret alder i stedet.");
-          return;
-        }
-
         if (error) {
           console.error("Import participants error:", error);
           alert("Kunne ikke importere deltakere: " + error.message);

@@ -106,10 +106,9 @@ export function AdminView() {
   const normalizeHeader = (header: string) =>
     header
       .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/ø/g, 'o')
-      .replace(/æ/g, 'ae')
-      .replace(/å/g, 'a');
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
 
   const getColumnIndex = (headers: string[], options: string[]) => {
     const normalized = headers.map(normalizeHeader);
@@ -182,9 +181,22 @@ export function AdminView() {
       return;
     }
 
-    const headers = rows[0].map((value) => String(value || '').trim());
+    const headers = rows[0].map((value, index) => {
+      const raw = String(value || '');
+      const cleaned = index === 0 ? raw.replace(/^\uFEFF/, '') : raw;
+      return cleaned.trim();
+    });
     const nameIndex = getColumnIndex(headers, ['Navn', 'Name']);
-    const birthDateIndex = getColumnIndex(headers, ['Fødselsdato', 'Foedselsdato', 'Fodselsdato', 'Birthdate', 'DateOfBirth', 'Dob']);
+    const birthDateIndex = getColumnIndex(headers, [
+      'Fødselsdato',
+      'Foedselsdato',
+      'Fodselsdato',
+      'F�dselsdato',
+      'Fdselsdato',
+      'Birthdate',
+      'DateOfBirth',
+      'Dob'
+    ]);
     const phoneIndex = getColumnIndex(headers, ['Mobiltelefon', 'Telefon', 'Phone', 'Mobile']);
     const emailIndex = getColumnIndex(headers, ['Epostadresse', 'E-postadresse', 'Epost', 'Email', 'E-mail']);
 
