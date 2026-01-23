@@ -120,13 +120,62 @@ export function AdminView() {
     return -1;
   };
 
+  const parseDelimitedText = (text: string, delimiter: string) => {
+    const rows: Array<Array<string>> = [];
+    const lines = text.split(/\r?\n/).filter((line) => line.length > 0);
+
+    for (const line of lines) {
+      const row: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+
+        if (char === '"' && nextChar === '"') {
+          current += '"';
+          i += 1;
+          continue;
+        }
+
+        if (char === '"') {
+          inQuotes = !inQuotes;
+          continue;
+        }
+
+        if (char === delimiter && !inQuotes) {
+          row.push(current);
+          current = '';
+          continue;
+        }
+
+        current += char;
+      }
+
+      row.push(current);
+      rows.push(row);
+    }
+
+    return rows;
+  };
+
   const handleImportFile = async (file: File) => {
     setImportError(null);
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as Array<Array<unknown>>;
+    let rows: Array<Array<unknown>> = [];
+
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      const text = await file.text();
+      const firstLine = text.split(/\r?\n/)[0] || '';
+      const delimiter = firstLine.includes(';') ? ';' : ',';
+      rows = parseDelimitedText(text, delimiter);
+    } else {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as Array<Array<unknown>>;
+    }
 
     if (!rows.length) {
       setImportError('Filen er tom.');
