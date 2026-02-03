@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 
 export function PhotoDropView() {
-  const { quotes, photos, addQuote, uploadPhoto, users } = useStore();
+  const { isAdmin, quotes, photos, addQuote, uploadPhoto, users } = useStore();
   
   // Quote State
   const [newQuoteText, setNewQuoteText] = useState('');
@@ -46,7 +46,7 @@ export function PhotoDropView() {
     <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
       <div className="max-w-4xl mx-auto px-6 py-12 relative z-10">
         <header className="mb-12">
-            <Link to="/" className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
+            <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
                 <ArrowLeft size={20} />
                 <span className="font-mono text-xs uppercase tracking-widest">Tilbake</span>
             </Link>

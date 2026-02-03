@@ -23,8 +23,8 @@ export function AdminView() {
   const [newUserName, setNewUserName] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
   const [participantSort, setParticipantSort] = useState<{ key: 'name' | 'email' | 'phone' | 'birthDate' | 'age' | null; dir: 'asc' | 'desc' }>({ key: null, dir: 'asc' });
-  const [showParticipants, setShowParticipants] = useState(false);
-  const [showPaymentStatus, setShowPaymentStatus] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(true);
+  const [showPaymentStatus, setShowPaymentStatus] = useState(true);
   const [paymentStatusSearch, setPaymentStatusSearch] = useState('');
   const [error, setError] = useState(false);
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
@@ -912,7 +912,8 @@ export function AdminView() {
             </div>
 
             {shouldShowPaymentStatus ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {filteredPaymentUsers.map((user) => {
                         const paidSet = getPaidMonthSetForUser(user.id);
                         const totalPaidMonths = paidSet.size;
@@ -963,6 +964,7 @@ export function AdminView() {
                             Ingen deltakere funnet.
                         </div>
                     )}
+                    </div>
                 </div>
             ) : (
                 <div className="bg-white/60 border border-royal/10 shadow-sm p-6 text-royal/50 text-xs font-mono uppercase">
