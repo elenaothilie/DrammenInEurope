@@ -134,3 +134,15 @@ export interface PaymentMonth {
   paid: boolean;
   paidAt?: string;
 }
+
+export type BudgetCategory = 'meals' | 'activities' | 'transportation' | 'staying_places' | 'other';
+
+export interface BudgetItem {
+  id: string;
+  category: BudgetCategory;
+  name: string;
+  budgeted: number;
+  actual: number | null;
+  notes?: string;
+  sortOrder?: number;
+}

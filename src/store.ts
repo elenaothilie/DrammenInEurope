@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from './lib/supabaseClient';
-import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth } from './types';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory } from './types';
 
 type ExportKind =
   | 'users'
@@ -13,7 +13,8 @@ type ExportKind =
   | 'quotes'
   | 'photos'
   | 'paymentPlans'
-  | 'paymentTransactions';
+  | 'paymentTransactions'
+  | 'budgets';
 type ParticipantImport = {
   fullName: string;
   displayName?: string;
@@ -137,6 +138,7 @@ interface AppState {
   paymentPlans: PaymentPlan[];
   paymentTransactions: PaymentTransaction[];
   paymentMonths: PaymentMonth[];
+  budgetItems: BudgetItem[];
   isLoading: boolean;
   error: string | null;
   
@@ -188,6 +190,11 @@ interface AppState {
 
   // Payments
   setPaymentMonth: (userId: string, month: string, paid: boolean) => Promise<void>;
+
+  // Budgets (admin only)
+  addBudgetItem: (category: BudgetCategory, name?: string, budgeted?: number, actual?: number | null) => Promise<void>;
+  updateBudgetItem: (id: string, data: Partial<BudgetItem>) => Promise<void>;
+  removeBudgetItem: (id: string) => Promise<void>;
   
   // Placeholder
   adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
@@ -219,6 +226,7 @@ export const useStore = create<AppState>()(
       paymentPlans: [],
       paymentTransactions: [],
       paymentMonths: [],
+      budgetItems: [],
       isLoading: false,
       error: null,
 
@@ -315,7 +323,8 @@ export const useStore = create<AppState>()(
             { data: photosData, error: photosError },
             { data: paymentPlansData, error: paymentPlansError },
             { data: paymentTransactionsData, error: paymentTransactionsError },
-            { data: paymentMonthsData, error: paymentMonthsError }
+            { data: paymentMonthsData, error: paymentMonthsError },
+            { data: budgetItemsData, error: budgetItemsError }
           ] = await Promise.all([
             supabase.from('profiles').select('*'),
             supabase.from('trip_days').select('*').order('sort_order', { ascending: true }),
@@ -327,7 +336,8 @@ export const useStore = create<AppState>()(
             supabase.from('photos').select('*').order('created_at', { ascending: false }),
             supabase.from('payment_plans').select('*').order('created_at', { ascending: false }),
             supabase.from('payment_transactions').select('*').order('created_at', { ascending: false }),
-            supabase.from('payment_months').select('*').order('month', { ascending: true })
+            supabase.from('payment_months').select('*').order('month', { ascending: true }),
+            supabase.from('budget_items').select('*').order('sort_order', { ascending: true })
           ]);
 
           if (usersError) throw usersError;
@@ -341,6 +351,7 @@ export const useStore = create<AppState>()(
           if (paymentPlansError) console.error("Payment plans fetch error:", paymentPlansError);
           if (paymentTransactionsError) console.error("Payment transactions fetch error:", paymentTransactionsError);
           if (paymentMonthsError) console.error("Payment months fetch error:", paymentMonthsError);
+          if (budgetItemsError) console.error("Budget items fetch error:", budgetItemsError);
 
           // Map Data to Store Format
           const users: User[] = (profiles || []).map((p: any) => ({
@@ -461,7 +472,17 @@ export const useStore = create<AppState>()(
             paidAt: row.paid_at
           }));
 
-          set({
+          const budgetItemsFromServer: BudgetItem[] = (budgetItemsData || []).map((row: any) => ({
+            id: row.id,
+            category: row.category as BudgetCategory,
+            name: row.name || '',
+            budgeted: parseAmount(row.budgeted),
+            actual: row.actual != null ? parseAmount(row.actual) : null,
+            notes: row.notes ?? undefined,
+            sortOrder: row.sort_order ?? 0
+          }));
+
+          set((state) => ({
             users,
             days,
             activities,
@@ -473,8 +494,9 @@ export const useStore = create<AppState>()(
             paymentPlans,
             paymentTransactions,
             paymentMonths,
+            budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
             isLoading: false
-          });
+          }));
 
         } catch (err: any) {
           console.error('Fetch error:', err);
@@ -773,13 +795,71 @@ export const useStore = create<AppState>()(
         }
       },
 
+      addBudgetItem: async (category, name = '', budgeted = 0, actual: number | null = null) => {
+        const items = get().budgetItems;
+        const sortOrder = items.filter((b) => b.category === category).length;
+        const clientId = crypto.randomUUID();
+        const newItem: BudgetItem = {
+          id: clientId,
+          category,
+          name: name || 'Ny post',
+          budgeted,
+          actual,
+          notes: undefined,
+          sortOrder,
+        };
+        set((state) => ({
+          budgetItems: [...state.budgetItems, newItem],
+        }));
+
+        const row = {
+          id: clientId,
+          category,
+          name: name || 'Ny post',
+          budgeted,
+          actual,
+          notes: '',
+          sort_order: sortOrder,
+        };
+        const { error } = await supabase.from('budget_items').insert(row);
+        if (error) {
+          console.warn('Budget item not saved to server (using local only):', error.message);
+        }
+      },
+
+      updateBudgetItem: async (id, data) => {
+        const item = get().budgetItems.find((b) => b.id === id);
+        if (!item) return;
+        set((state) => ({
+          budgetItems: state.budgetItems.map((b) =>
+            b.id === id ? { ...b, ...data } : b
+          )
+        }));
+        const dbData: Record<string, unknown> = {};
+        if (data.category !== undefined) dbData.category = data.category;
+        if (data.name !== undefined) dbData.name = data.name;
+        if (data.budgeted !== undefined) dbData.budgeted = data.budgeted;
+        if (data.actual !== undefined) dbData.actual = data.actual;
+        if (data.notes !== undefined) dbData.notes = data.notes;
+        if (data.sortOrder !== undefined) dbData.sort_order = data.sortOrder;
+        if (Object.keys(dbData).length > 0) {
+          const { error } = await supabase.from('budget_items').update(dbData).eq('id', id);
+          if (error) console.warn('Budget item update not synced to server:', error.message);
+        }
+      },
+
+      removeBudgetItem: async (id) => {
+        set((state) => ({ budgetItems: state.budgetItems.filter((b) => b.id !== id) }));
+        await supabase.from('budget_items').delete().eq('id', id);
+      },
+
       exportAdminData: (kind) => {
         if (!get().isAdmin) {
           alert("Du må være admin for å eksportere data.");
           return;
         }
 
-        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions } = get();
+        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions, budgetItems } = get();
         const dateTag = new Date().toISOString().split('T')[0];
 
         if (kind === 'users') {
@@ -1042,6 +1122,22 @@ export const useStore = create<AppState>()(
           downloadFile(`transaksjoner-${dateTag}.csv`, csv, 'text/csv;charset=utf-8');
           return;
         }
+
+        if (kind === 'budgets') {
+          const rows = budgetItems.map((item) => ({
+            category: item.category,
+            name: item.name,
+            budgeted: item.budgeted,
+            actual: item.actual ?? '',
+            notes: item.notes ?? ''
+          }));
+          const csv = toCsv(
+            ['category', 'name', 'budgeted', 'actual', 'notes'],
+            rows
+          );
+          downloadFile(`budsjetter-${dateTag}.csv`, csv, 'text/csv;charset=utf-8');
+          return;
+        }
       },
 
       exportAllData: () => {
@@ -1049,7 +1145,7 @@ export const useStore = create<AppState>()(
           alert("Du må være admin for å eksportere data.");
           return;
         }
-        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions } = get();
+        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions, budgetItems } = get();
         const dateTag = new Date().toISOString().split('T')[0];
         const payload = {
           exportedAt: new Date().toISOString(),
@@ -1062,7 +1158,8 @@ export const useStore = create<AppState>()(
           quotes,
           photos,
           paymentPlans,
-          paymentTransactions
+          paymentTransactions,
+          budgetItems
         };
         downloadFile(`turdata-${dateTag}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
       },
@@ -1514,9 +1611,7 @@ export const useStore = create<AppState>()(
       name: 'travel-app-storage',
       partialize: (state) => ({ 
         paymentMonths: state.paymentMonths,
-        // Don't persist currentUser or isAdmin to prevent auto-login
-        // currentUser: state.currentUser,
-        // isAdmin: state.isAdmin,
+        budgetItems: state.budgetItems,
       }),
       onRehydrateStorage: () => (state) => {
         state?.logout?.();

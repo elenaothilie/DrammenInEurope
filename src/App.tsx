@@ -9,6 +9,7 @@ import { PackingListView } from './views/PackingListView';
 import { RulesView } from './views/RulesView';
 import { FeedbackView } from './views/FeedbackView';
 import { PhotoDropView } from './views/PhotoDropView';
+import { AdminBudgetsView } from './views/AdminBudgetsView';
 import { useStore } from './store';
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<ParticipantView />} />
         <Route path="/admin" element={<AdminView />} />
+        <Route path="/admin/budgets" element={<AdminBudgetsView />} />
         <Route path="/noticeboard" element={<NoticeboardView />} />
         <Route path="/groups" element={<GroupsView />} />
         <Route path="/todays-plans" element={<TodaysPlansView />} />

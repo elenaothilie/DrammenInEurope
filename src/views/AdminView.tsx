@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { useStore } from '../store';
 import type { TripDay, ActivityOption, Signup } from '../types';
-import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight, Download, Upload, Tag, Car, ExternalLink } from 'lucide-react';
+import { Lock, Unlock, LogOut, Trash2, Plus, Edit2, Save, Clock, MapPin, Bus, GripVertical, Bell, Users, Calendar, ClipboardList, Book, MessageCircle, Camera, ArrowUpRight, Download, Upload, Tag, Car, ExternalLink, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import * as XLSX from 'xlsx';
@@ -917,6 +917,12 @@ export function AdminView() {
                 >
                     Transaksjoner (CSV)
                 </button>
+                <button
+                    onClick={() => exportAdminData('budgets')}
+                    className="bg-white border border-royal/10 px-4 py-3 text-xs font-mono uppercase text-royal hover:border-royal/40 hover:shadow-sm transition-all"
+                >
+                    Budsjetter (CSV)
+                </button>
             </div>
         </div>
 
@@ -1023,6 +1029,13 @@ export function AdminView() {
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Link
+                    to="/admin/budgets"
+                    className="bg-white p-4 border border-royal/10 hover:border-royal/40 hover:shadow-md transition-all group flex flex-col items-center justify-center text-center gap-2 h-32 relative"
+                >
+                    <Wallet className="text-royal/40 group-hover:text-royal transition-colors" size={24} />
+                    <span className="font-mono text-xs uppercase tracking-widest text-royal">Budsjett</span>
+                </Link>
                 {contentPages.map((page) => (
                     <Link 
                         key={page.path}

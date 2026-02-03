@@ -129,6 +129,17 @@ create table if not exists payment_months (
   unique(user_id, month)
 );
 
+-- Budget items (admin only: meals, activities, transportation, staying places, other)
+create table if not exists budget_items (
+  id uuid primary key default uuid_generate_v4(),
+  category text not null check (category in ('meals', 'activities', 'transportation', 'staying_places', 'other')),
+  name text not null,
+  budgeted decimal(12,2) not null default 0,
+  actual decimal(12,2),
+  notes text,
+  sort_order int default 0
+);
+
 -- Enable RLS
 alter table profiles enable row level security;
 alter table trip_days enable row level security;
@@ -141,6 +152,7 @@ alter table photos enable row level security;
 alter table payment_plans enable row level security;
 alter table payment_transactions enable row level security;
 alter table payment_months enable row level security;
+alter table budget_items enable row level security;
 
 -- Drop existing policies to avoid "policy already exists" errors
 drop policy if exists "Enable all access for profiles" on profiles;
@@ -154,6 +166,7 @@ drop policy if exists "Enable all access for photos" on photos;
 drop policy if exists "Enable all access for payment_plans" on payment_plans;
 drop policy if exists "Enable all access for payment_transactions" on payment_transactions;
 drop policy if exists "Enable all access for payment_months" on payment_months;
+drop policy if exists "Enable all access for budget_items" on budget_items;
 
 -- Create policies
 create policy "Enable all access for profiles" on profiles for all using (true) with check (true);
@@ -167,6 +180,7 @@ create policy "Enable all access for photos" on photos for all using (true) with
 create policy "Enable all access for payment_plans" on payment_plans for all using (true) with check (true);
 create policy "Enable all access for payment_transactions" on payment_transactions for all using (true) with check (true);
 create policy "Enable all access for payment_months" on payment_months for all using (true) with check (true);
+create policy "Enable all access for budget_items" on budget_items for all using (true) with check (true);
 
 -- Optional: Add columns if table already exists (migrations)
 do $$
