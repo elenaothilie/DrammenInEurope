@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
 import { SharpStar } from '../components/Star';
-import { ArrowLeft, Edit2, Save, Bus, BedDouble, Ticket, Search, Users } from 'lucide-react';
+import { ArrowLeft, Edit2, Save, Bus, BedDouble, Ticket, Search, Users, GripVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 import clsx from 'clsx';
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  TouchSensor,
+  useSensors,
+  useSensor,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 
 type Tab = 'bus' | 'room' | 'activities';
 
@@ -69,6 +79,137 @@ export function GroupsView() {
       }).filter(Boolean) as GroupData[];
   };
 
+  const serializeGroups = (groups: GroupData[]): string => {
+      return groups.map(g => [g.title, ...g.members].join('\n')).join('\n\n');
+  };
+
+  function DraggableMember({
+    id,
+    member,
+    groupIdx,
+    memberIdx,
+  }: {
+    id: string;
+    member: string;
+    groupIdx: number;
+    memberIdx: number;
+  }) {
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+      id,
+      data: { groupIdx, memberIdx, member },
+    });
+    return (
+      <div
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        className={clsx(
+          'flex items-center gap-2 text-sm text-royal/80 border border-royal/10 rounded px-3 py-2 bg-white cursor-grab active:cursor-grabbing',
+          isDragging && 'opacity-40'
+        )}
+      >
+        <GripVertical size={14} className="text-royal/40 shrink-0 pointer-events-none" />
+        <span className="font-sans truncate pointer-events-none">{member}</span>
+      </div>
+    );
+  }
+
+  function DroppableGroup({
+    group,
+    groupIdx,
+  }: {
+    group: GroupData;
+    groupIdx: number;
+  }) {
+    const { setNodeRef, isOver } = useDroppable({
+      id: `group-${groupIdx}`,
+      data: { groupIdx },
+    });
+    return (
+      <div
+        ref={setNodeRef}
+        className={clsx(
+          'bg-white border-2 shadow-sm flex flex-col min-h-[120px] transition-colors',
+          isOver ? 'border-royal bg-royal/5' : 'border-royal/20'
+        )}
+      >
+        <div className="bg-royal/5 p-4 border-b border-royal/5">
+          <h3 className="font-display font-bold text-lg text-royal uppercase leading-tight">
+            {group.title}
+          </h3>
+          <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-royal/40 uppercase tracking-widest">
+            <Users size={10} />
+            <span>{group.members.length} personer</span>
+          </div>
+        </div>
+        <div className="p-4 flex-1 flex flex-col gap-2">
+          {group.members.length === 0 && (
+            <p className="text-sm text-royal/30 italic py-2">Slipp medlemmer her</p>
+          )}
+          {group.members.map((member, mIdx) => (
+            <DraggableMember
+              key={`${groupIdx}-${mIdx}`}
+              id={`group-${groupIdx}-member-${mIdx}`}
+              member={member}
+              groupIdx={groupIdx}
+              memberIdx={mIdx}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function GroupDragEditor({
+    groups,
+    onGroupsChange,
+  }: {
+    groups: GroupData[];
+    onGroupsChange: (groups: GroupData[]) => void;
+  }) {
+    const sensors = useSensors(
+      useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+      useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over) return;
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const match = activeId.match(/^group-(\d+)-member-(\d+)$/);
+      const overGroupMatch = overId.match(/^group-(\d+)$/);
+      const overMemberMatch = overId.match(/^group-(\d+)-member-/);
+      const toGroupIdx = overGroupMatch
+        ? parseInt(overGroupMatch[1], 10)
+        : overMemberMatch
+          ? parseInt(overMemberMatch[1], 10)
+          : -1;
+      if (!match || toGroupIdx < 0) return;
+      const fromGroupIdx = parseInt(match[1], 10);
+      const fromMemberIdx = parseInt(match[2], 10);
+      if (fromGroupIdx === toGroupIdx) return;
+      const newGroups = groups.map((g) => ({ ...g, members: [...g.members] }));
+      const [member] = newGroups[fromGroupIdx].members.splice(fromMemberIdx, 1);
+      newGroups[toGroupIdx].members.push(member);
+      onGroupsChange(newGroups);
+    };
+
+    return (
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd} autoScroll={false}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-max">
+          {groups.map((group, groupIdx) => (
+            <DroppableGroup
+              key={groupIdx}
+              group={group}
+              groupIdx={groupIdx}
+            />
+          ))}
+        </div>
+      </DndContext>
+    );
+  }
+
   const getActiveContent = () => {
       switch (activeTab) {
           case 'bus': return parseGroups(content.bus);
@@ -131,7 +272,7 @@ export function GroupsView() {
 
         {/* Navigation Tabs */}
         <div className="flex flex-col md:flex-row gap-4 mb-8 border-b border-royal/10 pb-1">
-            <div className="flex flex-1 gap-2 overflow-x-auto pb-2 md:pb-0">
+            <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden pb-2 md:pb-0 no-scrollbar">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
@@ -169,29 +310,26 @@ export function GroupsView() {
             {isEditing ? (
                 <div className="space-y-4">
                     <div className="bg-royal/5 p-4 rounded-lg mb-4">
-                        <h3 className="font-bold text-royal text-sm mb-2">Instruksjoner for redigering</h3>
-                        <p className="text-xs text-royal/80 mb-2">
-                            Skriv inn grupper separert med en blank linje (to linjeskift).
-                            Den første linjen i hver blokk blir overskriften på gruppen.
-                            De neste linjene blir medlemmene.
+                        <h3 className="font-bold text-royal text-sm mb-2">Dra medlemmer mellom grupper</h3>
+                        <p className="text-xs text-royal/80">
+                            Dra et navn fra én gruppe og slipp det i en annen for å flytte.
                         </p>
-                        <pre className="bg-white/50 p-2 text-[10px] font-mono rounded text-royal/60">
-{`Gruppe 1 - Navn på gruppe
-Medlem 1
-Medlem 2
-Medlem 3
-
-Gruppe 2 - Annet navn
-Medlem A
-Medlem B`}
-                        </pre>
                     </div>
-                    <textarea 
-                        className="w-full h-[60vh] bg-white border-2 border-royal/20 p-6 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
-                        value={editState[activeTab]}
-                        onChange={e => setEditState({...editState, [activeTab]: e.target.value})}
-                        placeholder={`Lim inn liste for ${tabs.find(t => t.id === activeTab)?.label} her...`}
+                    <GroupDragEditor
+                        groups={parseGroups(editState[activeTab])}
+                        onGroupsChange={(groups) => setEditState({ ...editState, [activeTab]: serializeGroups(groups) })}
                     />
+                    <details className="mt-4">
+                        <summary className="text-xs font-mono uppercase text-royal/60 cursor-pointer hover:text-royal">
+                            Avansert: Rediger som tekst
+                        </summary>
+                        <textarea 
+                            className="mt-2 w-full h-48 bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
+                            value={editState[activeTab]}
+                            onChange={e => setEditState({...editState, [activeTab]: e.target.value})}
+                            placeholder={`Lim inn liste for ${tabs.find(t => t.id === activeTab)?.label} her...`}
+                        />
+                    </details>
                 </div>
             ) : (
                 <>

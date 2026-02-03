@@ -25,6 +25,13 @@
 }
 
 /* Utilities */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 .text-stroke {
   -webkit-text-stroke: 1px currentColor;
   color: transparent;
