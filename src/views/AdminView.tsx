@@ -805,14 +805,14 @@ export function AdminView() {
 
   // DASHBOARD LAYOUT
   return (
-    <div className="min-h-screen bg-paper selection:bg-royal selection:text-white pb-32">
+    <div className="min-h-screen bg-paper selection:bg-royal selection:text-white pb-safe">
       {/* Admin Header */}
-      <div className="bg-royal text-white px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm">ADMIN</div>
-          <h1 className="font-display font-bold text-xl uppercase tracking-tight hidden md:block">Tur Dashboard</h1>
+      <div className="bg-royal text-white px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm shrink-0">ADMIN</div>
+          <h1 className="font-display font-bold text-lg sm:text-xl uppercase tracking-tight truncate">Tur Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link to="/" className="text-white/60 hover:text-white flex items-center gap-2 font-mono text-xs uppercase">
                 <ArrowUpRight size={16} /> Til Appen
             </Link>
@@ -825,7 +825,7 @@ export function AdminView() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 md:p-12 space-y-16">
+      <div className="max-w-6xl mx-auto px-4 sm:p-6 md:p-12 py-8 md:py-12 space-y-10 sm:space-y-16">
         
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -845,7 +845,7 @@ export function AdminView() {
 
         {/* SECTION: INFO SIDE REDIGERING */}
         <div className="space-y-6">
-             <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+             <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Administrer Innhold
                 </h2>
@@ -860,7 +860,7 @@ export function AdminView() {
                     className="bg-white p-4 border border-royal/10 hover:border-royal/40 hover:shadow-md transition-all group flex flex-col items-center justify-center text-center gap-2 h-32 relative"
                 >
                     <Wallet className="text-royal/40 group-hover:text-royal transition-colors" size={24} />
-                    <span className="font-mono text-xs uppercase tracking-widest text-royal">Budsjett</span>
+                    <span className="type-label text-royal">Budsjett</span>
                 </Link>
                 {contentPages.map((page) => (
                     <Link 
@@ -874,7 +874,7 @@ export function AdminView() {
                             </span>
                         )}
                         <page.icon className="text-royal/40 group-hover:text-royal transition-colors" size={24} />
-                        <span className="font-mono text-xs uppercase tracking-widest text-royal">{page.title}</span>
+                        <span className="type-label text-royal">{page.title}</span>
                     </Link>
                 ))}
             </div>
@@ -882,7 +882,7 @@ export function AdminView() {
 
         {/* SECTION: BETALINGSSTATUS DELTAKERE */}
         <div className="space-y-6">
-            <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+            <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Betalingsstatus deltakere
                 </h2>
@@ -939,7 +939,7 @@ export function AdminView() {
 
                                 <div className="w-full h-2.5 bg-royal/10 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-royal via-royal-dark to-royal transition-all"
+                                        className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all"
                                         style={{ width: `${progressPercent}%` }}
                                     />
                                 </div>
@@ -975,7 +975,7 @@ export function AdminView() {
 
         {/* SECTION: DELTAKERE */}
         <div className="space-y-6">
-            <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+            <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Administrer Deltakere
                 </h2>
@@ -1059,7 +1059,7 @@ export function AdminView() {
                 <div className="bg-white border border-royal/10 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto max-h-96 overflow-y-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-white font-mono text-[10px] uppercase text-royal/60 sticky top-0 z-10 border-b border-royal/10">
+                            <thead className="bg-white font-mono text-[10px] uppercase text-royal/60 sticky top-0 z-10">
                                 <tr>
                                     <th className="py-3 pl-6">
                                         <button onClick={() => handleSort('name')} className="hover:text-royal cursor-pointer">
@@ -1160,7 +1160,7 @@ export function AdminView() {
                                             </div>
                                             <div className="mt-2 h-1.5 w-28 bg-royal/10 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-royal via-royal-dark to-royal transition-all"
+                                                    className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all"
                                                     style={{
                                                         width: `${Math.min(
                                                             100,
@@ -1205,7 +1205,7 @@ export function AdminView() {
 
         {/* SECTION: PROGRAM REDIGERING */}
         <div className="space-y-6">
-             <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+             <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Rediger Program
                 </h2>
@@ -1241,7 +1241,7 @@ export function AdminView() {
 
         {/* SECTION: AKTIVITETER */}
         <div className="space-y-6">
-            <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+            <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Administrer Aktiviteter
                 </h2>
@@ -1265,8 +1265,8 @@ export function AdminView() {
         </div>
 
         {/* SECTION: PÅMELDINGSLISTER (KEEPING EXISTING TABLE VIEW) */}
-        <div className="space-y-6 pt-12 border-t border-royal/10">
-          <h2 className="font-display font-bold text-2xl text-royal uppercase border-b-2 border-royal pb-2">
+        <div className="space-y-6 pt-12">
+          <h2 className="font-display font-bold text-2xl text-royal uppercase pb-2">
             Påmeldingslister
           </h2>
 
@@ -1278,7 +1278,7 @@ export function AdminView() {
               return (
                 <div key={activity.id} className="bg-white border border-royal/10 p-6 shadow-sm">
                   {/* Header */}
-                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-royal/10 pb-4">
+                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 pb-4">
                     <div>
                       <h3 className="font-display font-bold text-xl text-royal uppercase">{activity.title}</h3>
                       <p className="font-mono text-xs text-royal/60 mt-1 uppercase">
@@ -1305,7 +1305,7 @@ export function AdminView() {
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
-                        <thead className="font-mono text-[10px] uppercase text-royal/40 border-b border-royal/5">
+                        <thead className="font-mono text-[10px] uppercase text-royal/40">
                           <tr>
                             <th className="pb-2 pl-2">Navn</th>
                             <th className="pb-2">Rolle</th>
@@ -1359,8 +1359,8 @@ export function AdminView() {
         </div>
 
         {/* SECTION: EKSPORT (nederst på siden) */}
-        <div className="space-y-6 pt-12 border-t border-royal/10">
-            <div className="flex justify-between items-end border-b-2 border-royal pb-2">
+        <div className="space-y-6 pt-12">
+            <div className="flex justify-between items-end pb-2">
                 <h2 className="font-display font-bold text-2xl text-royal uppercase">
                     Eksport
                 </h2>

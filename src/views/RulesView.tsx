@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SharpStar } from '../components/Star';
 import { ArrowLeft, Edit2, Save, Shield, AlertTriangle, Heart, Clock, Volume2, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
@@ -103,26 +102,25 @@ export function RulesView() {
   };
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
-      <div className="max-w-3xl mx-auto px-6 py-12 relative z-10">
-        <header className="mb-12">
+    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-safe">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+        <header className="mb-8 sm:mb-12">
             <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
                 <ArrowLeft size={20} />
-                <span className="font-mono text-xs uppercase tracking-widest">Tilbake</span>
+                <span className="type-label">Tilbake</span>
             </Link>
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-                        <SharpStar size={12} />
-                        <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Viktig</span>
+                        <span className="type-label-wide">Viktig</span>
                     </div>
-                    <h1 className="font-display font-extrabold text-3xl md:text-6xl text-royal uppercase leading-none tracking-tight">
+                    <h1 className="type-display-1 text-royal">
                         Regler
                     </h1>
                 </div>
                 {isAdmin && (
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
+                        <span className="type-label-wide text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
                         <button 
                             onClick={() => setIsEditing(!isEditing)}
                             className="bg-royal/10 hover:bg-royal/20 text-royal p-3 rounded-full transition-colors"
@@ -136,7 +134,7 @@ export function RulesView() {
 
         {isEditing ? (
             <div className="space-y-4">
-                 <div className="bg-royal/5 p-4 rounded-lg mb-4">
+                 <div className="bg-royal/5 p-4 mb-4">
                     <h3 className="font-bold text-royal text-sm mb-2">Rediger Regler JSON</h3>
                     <p className="text-xs text-royal/80">
                         Ikoner: 'shield', 'clock', 'heart', 'volume', 'alert'.<br/>
@@ -144,14 +142,14 @@ export function RulesView() {
                     </p>
                 </div>
                 <textarea 
-                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
+                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none type-body type-long"
                     value={editJson}
                     onChange={(e) => setEditJson(e.target.value)}
                 />
             </div>
         ) : (
-            <div className="space-y-4">
-                <p className="text-royal/60 mb-8 font-sans text-lg max-w-xl">
+            <div className="space-y-4 animate-stagger">
+                <p className="text-royal/60 mb-8 text-lg max-w-xl">
                     For at alle skal få en fantastisk tur, har vi noen enkle "House Rules" vi ber alle følge.
                 </p>
 
@@ -174,14 +172,14 @@ export function RulesView() {
                                 <div className={clsx(
                                     "w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 transition-transform duration-500",
                                     severityClass,
-                                    isExpanded && "rotate-[360deg] scale-110"
+                                    isExpanded && "rotate-360 scale-110"
                                 )}>
                                     <Icon size={24} strokeWidth={2} />
                                 </div>
                                 
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-1">
-                                        <span className="font-mono text-xs text-royal/40 uppercase tracking-widest">Regel #{idx + 1}</span>
+                                        <span className="type-label text-royal/40">Regel #{idx + 1}</span>
                                         {rule.severity === 'high' && (
                                             <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                                                 Viktig
@@ -208,7 +206,7 @@ export function RulesView() {
                                     <div className="w-12 shrink-0 flex justify-center">
                                         <div className="w-px h-full bg-royal/10"></div>
                                     </div>
-                                    <p className="text-royal/80 font-sans text-lg leading-relaxed">
+                                    <p className="text-royal/80 text-lg leading-relaxed">
                                         {rule.description}
                                     </p>
                                 </div>

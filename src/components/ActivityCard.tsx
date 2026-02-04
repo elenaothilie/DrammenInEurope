@@ -26,22 +26,22 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
   return (
     <>
       <div className={clsx(
-        "relative group bg-white border-l-4 p-6 transition-all duration-300",
+        "relative group bg-white border-l-4 p-4 sm:p-6 transition-all duration-300",
         isSignedUp ? "border-royal shadow-md bg-royal/5" : "border-royal/20 hover:border-royal/60 hover:bg-white"
       )}>
         
         {/* Status Badge */}
         {isSignedUp && (
-          <div className="absolute top-4 right-4 bg-royal text-white px-3 py-1 text-[10px] font-mono uppercase tracking-widest flex items-center gap-2 rounded-sm shadow-sm">
+          <div className="absolute top-4 right-4 bg-royal text-white px-3 py-1 type-label-wide flex items-center gap-2 shadow-sm">
             <Check size={12} /> Påmeldt
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
           
           {/* Main Info */}
           <div className="flex-1 space-y-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-royal/60 uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-label text-royal/60">
               <span className="flex items-center gap-1">{activity.timeStart} - {activity.timeEnd}</span>
               <span>•</span>
               <span className="flex items-center gap-1"><MapPin size={14} /> {activity.location}</span>
@@ -51,27 +51,27 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
               <span className="flex items-center gap-1"><Car size={12} /> {activity.drivingLength?.trim() ? activity.drivingLength : 'Ikke angitt'}</span>
             </div>
 
-            <h3 className="font-display font-bold text-2xl text-royal uppercase leading-none">
+            <h3 className="font-display font-bold text-xl sm:text-2xl text-royal uppercase leading-none wrap-break-word">
               {activity.title}
             </h3>
 
-            <p className="text-royal/80 text-sm max-w-lg leading-relaxed font-sans">
+            <p className="text-royal/80 text-sm max-w-lg leading-relaxed">
               {activity.description}
             </p>
 
             {/* Meta Tags */}
             <div className="flex flex-wrap gap-2 pt-2">
-              <div className="bg-paper px-2 py-1 text-[10px] font-mono uppercase text-royal/70 border border-royal/10 flex items-center gap-1">
+              <div className="bg-paper px-2 py-1 type-label-wide text-royal/70 border border-royal/10 flex items-center gap-1">
                 <Bus size={10} /> {activity.transport}
               </div>
-              <div className="bg-paper px-2 py-1 text-[10px] font-mono uppercase text-royal/70 border border-royal/10 flex items-center gap-1">
+              <div className="bg-paper px-2 py-1 type-label-wide text-royal/70 border border-royal/10 flex items-center gap-1">
                 <Tag size={10} /> {activity.price?.trim() ? activity.price : '–'}
               </div>
-              <div className="bg-paper px-2 py-1 text-[10px] font-mono uppercase text-royal/70 border border-royal/10 flex items-center gap-1">
+              <div className="bg-paper px-2 py-1 type-label-wide text-royal/70 border border-royal/10 flex items-center gap-1">
                 <Car size={10} /> {activity.drivingLength?.trim() ? activity.drivingLength : '–'}
               </div>
               {activity.tags?.map(tag => (
-                <span key={tag} className="bg-paper px-2 py-1 text-[10px] font-mono uppercase text-royal/70 border border-royal/10">
+                <span key={tag} className="bg-paper px-2 py-1 type-label-wide text-royal/70 border border-royal/10">
                   {tag}
                 </span>
               ))}
@@ -84,12 +84,12 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
                   href={activity.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-mono uppercase text-royal font-semibold hover:text-royal-dark border-b-2 border-royal/40 hover:border-royal pb-0.5"
+                  className="inline-flex items-center gap-1.5 text-sm type-label text-royal font-semibold hover:text-royal-dark border-b-2 border-royal/40 hover:border-royal pb-0.5"
                 >
                   <ExternalLink size={14} /> Les mer / lenke til aktivitet
                 </a>
               ) : (
-                <span className="inline-flex items-center gap-1.5 text-xs font-mono uppercase text-royal/40">
+                <span className="inline-flex items-center gap-1.5 type-label text-royal/40">
                   <ExternalLink size={12} /> Lenke: Ikke angitt
                 </span>
               )}
@@ -97,11 +97,11 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
           </div>
 
           {/* Action Column */}
-          <div className="w-full md:w-48 flex flex-col justify-between gap-4 border-t md:border-t-0 md:border-l border-royal/10 pt-4 md:pt-0 md:pl-6">
+          <div className="w-full md:w-48 flex flex-col justify-between gap-4 pt-4 md:pt-0 md:pl-6">
             
             {/* Capacity Bar */}
             <div className="space-y-1">
-              <div className="flex justify-between text-[10px] font-mono text-royal/60 uppercase">
+              <div className="flex justify-between type-label-wide text-royal/60">
                 <span>Plasser</span>
                 <span>{count} / {activity.capacityMax}</span>
               </div>
@@ -117,7 +117,7 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
             <div className="space-y-2">
               <button
                 onClick={() => setModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 text-xs font-mono uppercase text-royal/60 hover:text-royal py-2 transition-colors group/btn"
+                className="w-full flex items-center justify-center gap-2 type-label text-royal/60 hover:text-royal py-2 transition-colors group/btn"
               >
                 <Users size={14} />
                 <span className="border-b border-transparent group-hover/btn:border-royal/40">Se hvem som drar</span>
@@ -127,7 +127,7 @@ export function ActivityCard({ activity, isChoiceDay: _isChoiceDay }: ActivityCa
                 onClick={() => toggleActivitySignup(activity.id)}
                 disabled={!isSignedUp && isFull}
                 className={clsx(
-                  "w-full py-3 px-4 font-mono text-xs uppercase tracking-widest transition-all duration-200 shadow-sm",
+                  "w-full py-3 px-4 type-label transition-all duration-200 shadow-sm",
                   isSignedUp 
                     ? "bg-transparent border-2 border-royal text-royal hover:bg-red-50 hover:border-red-500 hover:text-red-500"
                     : isFull 

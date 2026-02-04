@@ -175,23 +175,23 @@ export function AdminBudgetsView() {
   }
 
   return (
-    <div className="min-h-screen bg-paper selection:bg-royal selection:text-white pb-32">
-      <div className="bg-royal text-white px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-paper selection:bg-royal selection:text-white pb-safe">
+      <div className="bg-royal text-white px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Link
             to="/admin"
-            className="text-white/80 hover:text-white flex items-center gap-2 font-mono text-xs uppercase"
+            className="text-white/80 hover:text-white flex items-center gap-2 font-mono text-xs uppercase shrink-0"
           >
             <ArrowLeft size={16} /> Dashboard
           </Link>
-          <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm">
+          <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm shrink-0">
             ADMIN
           </div>
-          <h1 className="font-display font-bold text-xl uppercase tracking-tight hidden md:block">
+          <h1 className="font-display font-bold text-lg sm:text-xl uppercase tracking-tight truncate">
             Budsjettoversikt
           </h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0 flex-wrap">
           <button
             onClick={() => exportAdminData('budgets')}
             className="flex items-center gap-2 text-white/80 hover:text-white font-mono text-xs uppercase"
@@ -207,10 +207,10 @@ export function AdminBudgetsView() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-8 md:py-12 space-y-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-12 space-y-8 sm:space-y-10">
         {/* Budget overview: overall + per person */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-sm border border-royal/20 shadow-sm p-6">
+          <div className="bg-white border border-royal/20 shadow-sm p-6">
             <h2 className="font-display font-bold text-sm text-royal/70 uppercase tracking-wider mb-4">
               Budsjett totalt
             </h2>
@@ -223,7 +223,7 @@ export function AdminBudgetsView() {
                 <span className="font-mono text-xs uppercase text-royal/60">Faktisk</span>
                 <span className="font-mono font-bold text-royal tabular-nums">{formatKr(totals.actual)}</span>
               </div>
-              <div className="flex justify-between items-baseline pt-2 border-t border-royal/10">
+              <div className="flex justify-between items-baseline pt-2">
                 <span className="font-mono text-xs uppercase text-royal/60">Differanse</span>
                 <span
                   className={clsx(
@@ -236,7 +236,7 @@ export function AdminBudgetsView() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-sm border border-royal/20 shadow-sm p-6">
+          <div className="bg-white border border-royal/20 shadow-sm p-6">
             <h2 className="font-display font-bold text-sm text-royal/70 uppercase tracking-wider mb-4">
               Budsjett per person
               {participantCount > 0 && (
@@ -255,7 +255,7 @@ export function AdminBudgetsView() {
                   <span className="font-mono text-xs uppercase text-royal/60">Faktisk</span>
                   <span className="font-mono font-bold text-royal tabular-nums">{formatKr(budgetPerPerson.actual)}</span>
                 </div>
-                <div className="flex justify-between items-baseline pt-2 border-t border-royal/10">
+                <div className="flex justify-between items-baseline pt-2">
                   <span className="font-mono text-xs uppercase text-royal/60">Differanse</span>
                   <span
                     className={clsx(
@@ -282,8 +282,8 @@ export function AdminBudgetsView() {
         </div>
 
         {/* Kontroll og rapportering – dashbord */}
-        <div className="bg-white rounded-sm border border-royal/20 shadow-sm overflow-hidden">
-          <div className="px-6 md:px-10 py-6 border-b border-royal/15 bg-royal/[0.04]">
+        <div className="bg-white border border-royal/20 shadow-sm overflow-hidden">
+          <div className="px-6 md:px-10 py-6 bg-royal/4">
             <h2 className="font-display font-bold text-lg text-royal uppercase tracking-tight">
               Kontroll og rapportering
             </h2>
@@ -334,10 +334,10 @@ export function AdminBudgetsView() {
             {/* Største kostnadsdrivere */}
             <div>
               <h3 className="font-mono text-[10px] uppercase text-royal/60 tracking-widest mb-4">Største kostnadsdrivere</h3>
-              <div className="bg-paper/30 rounded border border-royal/10 overflow-hidden">
+              <div className="bg-paper/30 border border-royal/10 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="font-mono text-[10px] uppercase text-royal/50 border-b border-royal/10">
+                    <tr className="font-mono text-[10px] uppercase text-royal/50">
                       <th className="text-left py-2 pl-4">Post</th>
                       <th className="text-left py-2">Kategori</th>
                       <th className="text-right py-2 pr-4">Faktisk</th>
@@ -349,7 +349,7 @@ export function AdminBudgetsView() {
                       .sort((a, b) => (b.actual ?? 0) - (a.actual ?? 0))
                       .slice(0, 10)
                       .map((item) => (
-                        <tr key={item.id} className="border-b border-royal/5 last:border-0">
+                        <tr key={item.id}>
                           <td className="py-2 pl-4 font-medium text-royal">{item.name}</td>
                           <td className="py-2 font-mono text-[10px] text-royal/60">{CATEGORY_LABELS[item.category]}</td>
                           <td className="py-2 pr-4 font-mono text-right tabular-nums text-royal">{formatKr(item.actual)}</td>
@@ -367,7 +367,7 @@ export function AdminBudgetsView() {
               <h3 className="font-mono text-[10px] uppercase text-royal/60 tracking-widest mb-4 flex items-center gap-2">
                 <Bell size={14} /> Varsel før forfallsdato
               </h3>
-              <div className="bg-paper/30 rounded border border-royal/10 overflow-hidden">
+              <div className="bg-paper/30 border border-royal/10 overflow-hidden">
                 <ul className="divide-y divide-royal/5">
                   {budgetItems
                     .filter((b) => b.dueDate)
@@ -417,7 +417,7 @@ export function AdminBudgetsView() {
             <div>
               <h3 className="font-mono text-[10px] uppercase text-royal/60 tracking-widest mb-4">Pris per deltaker</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-paper/30 border border-royal/10 rounded p-4">
+                <div className="bg-paper/30 border border-royal/10 p-4">
                   <div className="font-mono text-[10px] uppercase text-royal/50 mb-1">Budsjettert per person</div>
                   <div className="font-display font-bold text-xl text-royal">
                     {budgetPerPerson ? formatKr(budgetPerPerson.budgeted) : '–'}
@@ -426,13 +426,13 @@ export function AdminBudgetsView() {
                     <div className="font-mono text-[10px] text-royal/50 mt-1">{participantCount} deltakere</div>
                   )}
                 </div>
-                <div className="bg-paper/30 border border-royal/10 rounded p-4">
+                <div className="bg-paper/30 border border-royal/10 p-4">
                   <div className="font-mono text-[10px] uppercase text-royal/50 mb-1">Faktisk per person</div>
                   <div className="font-display font-bold text-xl text-royal">
                     {budgetPerPerson ? formatKr(budgetPerPerson.actual) : '–'}
                   </div>
                 </div>
-                <div className="bg-paper/30 border border-royal/10 rounded p-4">
+                <div className="bg-paper/30 border border-royal/10 p-4">
                   <div className="font-mono text-[10px] uppercase text-royal/50 mb-1">Differanse per person</div>
                   <div
                     className={clsx(
@@ -457,7 +457,7 @@ export function AdminBudgetsView() {
         </div>
 
         {/* Legg til utgift – rett over budsjettet */}
-        <div className="bg-white rounded-sm border border-royal/20 shadow-sm overflow-hidden">
+        <div className="bg-white border border-royal/20 shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setShowAddForm((v) => !v)}
@@ -467,7 +467,7 @@ export function AdminBudgetsView() {
             {showAddForm ? 'Lukk' : 'Legg til utgift / budsjettpost'}
           </button>
           {showAddForm && (
-            <form onSubmit={handleAddExpense} className="px-6 md:px-8 py-6 md:py-8 bg-paper/30 border-t border-royal/10">
+            <form onSubmit={handleAddExpense} className="px-6 md:px-8 py-6 md:py-8 bg-paper/30">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end">
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-mono uppercase text-royal/50 mb-2 tracking-widest">Kategori</label>
@@ -558,8 +558,8 @@ export function AdminBudgetsView() {
         </div>
 
         {/* Budget overview (poster per kategori) */}
-        <div className="bg-white rounded-sm border border-royal/20 shadow-sm overflow-hidden">
-          <div className="px-6 md:px-10 py-6 border-b border-royal/15 bg-royal/[0.04]">
+        <div className="bg-white border border-royal/20 shadow-sm overflow-hidden">
+          <div className="px-6 md:px-10 py-6 bg-royal/4">
             <h2 className="font-display font-bold text-lg text-royal uppercase tracking-tight">
               Budsjettoversikt
             </h2>
@@ -569,12 +569,12 @@ export function AdminBudgetsView() {
           <div>
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="font-mono text-[10px] uppercase text-royal/60 bg-royal/[0.06] border-b border-royal/15 tracking-widest">
+                <tr className="font-mono text-[10px] uppercase text-royal/60 bg-royal/6 tracking-widest">
                   <th className="text-left py-4 pl-8 pr-4 w-36">Kategori</th>
                   <th className="text-left py-4 px-4">Post</th>
-                  <th className="text-right py-4 px-5 min-w-[11rem] w-44 whitespace-nowrap">Budsjettert</th>
-                  <th className="text-right py-4 px-5 min-w-[11rem] w-44 whitespace-nowrap">Faktisk</th>
-                  <th className="text-right py-4 px-5 min-w-[11rem] w-44 whitespace-nowrap">Differanse</th>
+                  <th className="text-right py-4 px-5 min-w-44 w-44 whitespace-nowrap">Budsjettert</th>
+                  <th className="text-right py-4 px-5 min-w-44 w-44 whitespace-nowrap">Faktisk</th>
+                  <th className="text-right py-4 px-5 min-w-44 w-44 whitespace-nowrap">Differanse</th>
                   <th className="w-14 py-4 pr-6"></th>
                 </tr>
               </thead>
@@ -586,7 +586,7 @@ export function AdminBudgetsView() {
                   return (
                     <React.Fragment key={category}>
                       {/* Category overview row (always visible) */}
-                      <tr className="bg-royal/[0.06] font-mono text-xs font-bold border-b border-royal/15">
+                      <tr className="bg-royal/6 font-mono text-xs font-bold">
                         <td className="py-4 pl-8 pr-4 uppercase text-royal/60 tracking-wider align-middle">
                           {CATEGORY_LABELS[category]}
                         </td>
@@ -607,9 +607,9 @@ export function AdminBudgetsView() {
                             )}
                           </button>
                         </td>
-                        <td className="py-4 px-5 text-right tabular-nums text-royal whitespace-nowrap min-w-[11rem] align-middle">{formatKr(ct.budgeted)}</td>
-                        <td className="py-4 px-5 text-right tabular-nums text-royal whitespace-nowrap min-w-[11rem] align-middle">{formatKr(ct.actual)}</td>
-                        <td className={clsx('py-4 px-5 text-right tabular-nums whitespace-nowrap min-w-[11rem] align-middle', ct.difference > 0 ? 'text-red-600' : ct.difference < 0 ? 'text-green-600' : 'text-royal/55')}>
+                        <td className="py-4 px-5 text-right tabular-nums text-royal whitespace-nowrap min-w-44 align-middle">{formatKr(ct.budgeted)}</td>
+                        <td className="py-4 px-5 text-right tabular-nums text-royal whitespace-nowrap min-w-44 align-middle">{formatKr(ct.actual)}</td>
+                        <td className={clsx('py-4 px-5 text-right tabular-nums whitespace-nowrap min-w-44 align-middle', ct.difference > 0 ? 'text-red-600' : ct.difference < 0 ? 'text-green-600' : 'text-royal/55')}>
                           {ct.difference !== 0 ? (ct.difference > 0 ? '+' : '') + formatKr(ct.difference) : '–'}
                         </td>
                         <td className="py-4 pr-6"></td>
@@ -620,7 +620,7 @@ export function AdminBudgetsView() {
                           const diff = (item.actual ?? 0) - item.budgeted;
                           const isEditing = editingId === item.id;
                           return (
-                            <tr key={item.id} className="hover:bg-royal/[0.03] group transition-colors">
+                            <tr key={item.id} className="hover:bg-royal/3 group transition-colors">
                               <td className="py-3 pl-12 pr-4 font-mono text-[10px] uppercase text-royal/45 align-middle">
                                 {CATEGORY_LABELS[category]}
                               </td>
@@ -644,13 +644,13 @@ export function AdminBudgetsView() {
                                   </button>
                                 )}
                               </td>
-                              <td className="py-3 px-5 text-right font-mono tabular-nums text-royal/90 align-middle whitespace-nowrap min-w-[11rem]">
+                              <td className="py-3 px-5 text-right font-mono tabular-nums text-royal/90 align-middle whitespace-nowrap min-w-44">
                                 {isEditing ? (
                                   <input
                                     type="number"
                                     step="1"
                                     min="0"
-                                    className="w-full min-w-[7rem] bg-paper/50 border-b border-royal/20 text-right font-mono py-1.5 px-1"
+                                    className="w-full min-w-28 bg-paper/50 border-b border-royal/20 text-right font-mono py-1.5 px-1"
                                     defaultValue={item.budgeted}
                                     onBlur={(e) => updateBudgetItem(item.id, { budgeted: Number(e.target.value) || 0 })}
                                   />
@@ -658,13 +658,13 @@ export function AdminBudgetsView() {
                                   formatKr(item.budgeted)
                                 )}
                               </td>
-                              <td className="py-3 px-5 text-right font-mono tabular-nums text-royal/90 align-middle whitespace-nowrap min-w-[11rem]">
+                              <td className="py-3 px-5 text-right font-mono tabular-nums text-royal/90 align-middle whitespace-nowrap min-w-44">
                                 {isEditing ? (
                                   <input
                                     type="number"
                                     step="1"
                                     min="0"
-                                    className="w-full min-w-[7rem] bg-paper/50 border-b border-royal/20 text-right font-mono py-1.5 px-1"
+                                    className="w-full min-w-28 bg-paper/50 border-b border-royal/20 text-right font-mono py-1.5 px-1"
                                     defaultValue={item.actual ?? ''}
                                     placeholder="–"
                                     onBlur={(e) => {
@@ -676,7 +676,7 @@ export function AdminBudgetsView() {
                                   formatKr(item.actual)
                                 )}
                               </td>
-                              <td className={clsx('py-3 px-5 text-right font-mono tabular-nums font-medium align-middle whitespace-nowrap min-w-[11rem]', diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : 'text-royal/45')}>
+                              <td className={clsx('py-3 px-5 text-right font-mono tabular-nums font-medium align-middle whitespace-nowrap min-w-44', diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : 'text-royal/45')}>
                                 {diff !== 0 ? (diff > 0 ? '+' : '') + formatKr(diff) : '–'}
                               </td>
                               <td className="py-3 pr-6 text-right align-middle flex items-center justify-end gap-1">
@@ -713,12 +713,12 @@ export function AdminBudgetsView() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-royal/30 bg-royal/10 font-display font-bold text-royal uppercase text-sm">
+                <tr className="bg-royal/10 font-display font-bold text-royal uppercase text-sm">
                   <td className="py-5 pl-8 pr-4">Total</td>
                   <td className="py-5 px-4"></td>
-                  <td className="py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-[11rem]">{formatKr(totals.budgeted)}</td>
-                  <td className="py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-[11rem]">{formatKr(totals.actual)}</td>
-                  <td className={clsx('py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-[11rem]', totalDifference > 0 ? 'text-red-600' : totalDifference < 0 ? 'text-green-600' : '')}>
+                  <td className="py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-44">{formatKr(totals.budgeted)}</td>
+                  <td className="py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-44">{formatKr(totals.actual)}</td>
+                  <td className={clsx('py-5 px-5 text-right tabular-nums whitespace-nowrap min-w-44', totalDifference > 0 ? 'text-red-600' : totalDifference < 0 ? 'text-green-600' : '')}>
                     {totalDifference !== 0 ? (totalDifference > 0 ? '+' : '') + formatKr(totalDifference) : '–'}
                   </td>
                   <td className="py-5 pr-6"></td>
@@ -741,10 +741,10 @@ export function AdminBudgetsView() {
             onClick={() => setSelectedItemId(null)}
           >
             <div
-              className="bg-white rounded-lg border-2 border-royal shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white border-2 border-royal shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-white border-b border-royal/15 px-6 py-4 flex justify-between items-start">
+              <div className="sticky top-0 bg-white px-6 py-4 flex justify-between items-start">
                 <h3 className="font-display font-bold text-xl text-royal uppercase">{selectedItem.name}</h3>
                 <button type="button" onClick={() => setSelectedItemId(null)} className="p-2 text-royal/60 hover:text-royal">
                   <X size={24} />
@@ -765,7 +765,7 @@ export function AdminBudgetsView() {
                   </div>
                 </div>
                 {/* Deadline-styring */}
-                <div className="border-t border-royal/10 pt-4">
+                <div className="pt-4">
                   <h4 className="font-mono text-[10px] uppercase text-royal/60 tracking-widest mb-3">Deadline-styring</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -799,7 +799,7 @@ export function AdminBudgetsView() {
                     <input
                       type="number"
                       min="0"
-                      className="w-full max-w-[8rem] border-b border-royal/20 py-2 font-mono text-sm bg-transparent focus:border-royal outline-none"
+                      className="w-full max-w-32 border-b border-royal/20 py-2 font-mono text-sm bg-transparent focus:border-royal outline-none"
                       value={selectedItem.alertDaysBefore ?? ''}
                       onChange={(e) => updateBudgetItem(selectedItem.id, { alertDaysBefore: e.target.value === '' ? undefined : Number(e.target.value) })}
                     />
@@ -841,7 +841,7 @@ export function AdminBudgetsView() {
                   </div>
                   <ul className="space-y-2">
                     {(selectedItem.attachments || []).map((att, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-2 py-2 border-b border-royal/5">
+                      <li key={idx} className="flex items-center justify-between gap-2 py-2">
                         <a href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-royal font-mono text-sm hover:underline truncate">
                           <ExternalLink size={14} /> {att.name}
                         </a>

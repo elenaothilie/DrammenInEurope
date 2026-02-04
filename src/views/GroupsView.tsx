@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SharpStar } from '../components/Star';
 import { ArrowLeft, Edit2, Save, Bus, BedDouble, Ticket, Search, Users, GripVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
@@ -109,7 +108,7 @@ export function GroupsView() {
         )}
       >
         <GripVertical size={14} className="text-royal/40 shrink-0 pointer-events-none" />
-        <span className="font-sans truncate pointer-events-none">{member}</span>
+        <span className="truncate pointer-events-none">{member}</span>
       </div>
     );
   }
@@ -133,11 +132,11 @@ export function GroupsView() {
           isOver ? 'border-royal bg-royal/5' : 'border-royal/20'
         )}
       >
-        <div className="bg-royal/5 p-4 border-b border-royal/5">
+        <div className="bg-royal/5 p-4">
           <h3 className="font-display font-bold text-lg text-royal uppercase leading-tight">
             {group.title}
           </h3>
-          <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-royal/40 uppercase tracking-widest">
+          <div className="mt-1 flex items-center gap-1 type-label-wide text-royal/40">
             <Users size={10} />
             <span>{group.members.length} personer</span>
           </div>
@@ -245,26 +244,25 @@ export function GroupsView() {
   ];
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
-      <div className="max-w-6xl mx-auto px-6 py-12 relative z-10">
-        <header className="mb-8">
+    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-safe">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+        <header className="mb-6 sm:mb-8">
             <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
                 <ArrowLeft size={20} />
-                <span className="font-mono text-xs uppercase tracking-widest">Tilbake</span>
+                <span className="type-label">Tilbake</span>
             </Link>
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-                        <SharpStar size={12} />
-                        <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Lister</span>
+                        <span className="type-label-wide">Lister</span>
                     </div>
-                    <h1 className="font-display font-extrabold text-3xl md:text-6xl text-royal uppercase leading-none tracking-tight">
+                    <h1 className="type-display-1 text-royal">
                         Grupper
                     </h1>
                 </div>
                 {isAdmin && activeTab !== 'activities' && (
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
+                        <span className="type-label-wide text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
                         <button 
                             onClick={() => {
                                 if (isEditing) {
@@ -283,14 +281,14 @@ export function GroupsView() {
         </header>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 border-b border-royal/10 pb-1">
+        <div className="flex flex-col md:flex-row gap-4 mb-8 pb-1">
             <div className="flex flex-1 gap-2 overflow-x-auto overflow-y-hidden pb-2 md:pb-0 no-scrollbar">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={clsx(
-                            "flex items-center gap-2 px-6 py-3 rounded-t-lg transition-all font-mono text-xs uppercase tracking-widest whitespace-nowrap",
+                            "flex items-center gap-2 px-6 py-3 transition-all type-label whitespace-nowrap",
                             activeTab === tab.id 
                                 ? "bg-royal text-white shadow-lg translate-y-1" 
                                 : "bg-white/50 text-royal/60 hover:bg-white hover:text-royal"
@@ -321,7 +319,7 @@ export function GroupsView() {
         <div className="min-h-[400px]">
             {isEditing && activeTab !== 'activities' ? (
                 <div className="space-y-4">
-                    <div className="bg-royal/5 p-4 rounded-lg mb-4">
+                    <div className="bg-royal/5 p-4 mb-4">
                         <h3 className="font-bold text-royal text-sm mb-2">Dra medlemmer mellom grupper</h3>
                         <p className="text-xs text-royal/80">
                             Dra et navn fra én gruppe og slipp det i en annen for å flytte.
@@ -332,11 +330,11 @@ export function GroupsView() {
                         onGroupsChange={(groups) => setEditState({ ...editState, [activeTab]: serializeGroups(groups) })}
                     />
                     <details className="mt-4">
-                        <summary className="text-xs font-mono uppercase text-royal/60 cursor-pointer hover:text-royal">
+                        <summary className="type-label text-royal/60 cursor-pointer hover:text-royal">
                             Avansert: Rediger som tekst
                         </summary>
                         <textarea 
-                            className="mt-2 w-full h-48 bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
+                            className="mt-2 w-full h-48 bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none type-body type-long"
                             value={editState[activeTab]}
                             onChange={e => setEditState({...editState, [activeTab]: e.target.value})}
                             placeholder={`Lim inn liste for ${tabs.find(t => t.id === activeTab)?.label} her...`}
@@ -346,14 +344,14 @@ export function GroupsView() {
             ) : (
                 <>
                     {activeTab === 'activities' && (
-                        <p className="text-xs text-royal/50 font-mono uppercase tracking-widest mb-4">
+                        <p className="type-label text-royal/50 mb-4">
                             Basert på påmeldinger til valgfrie aktiviteter
                         </p>
                     )}
                     {filteredGroups.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-24 text-royal/40">
                             <Users size={48} className="mb-4 opacity-50" />
-                            <p className="font-mono text-sm uppercase tracking-widest">Ingen grupper funnet</p>
+                            <p className="type-body type-label">Ingen grupper funnet</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-max">
@@ -362,11 +360,11 @@ export function GroupsView() {
                                     key={idx} 
                                     className="bg-white border border-royal/10 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
                                 >
-                                    <div className="bg-royal/5 p-4 border-b border-royal/5">
+                                    <div className="bg-royal/5 p-4">
                                         <h3 className="font-display font-bold text-lg text-royal uppercase leading-tight">
                                             {group.title}
                                         </h3>
-                                        <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-royal/40 uppercase tracking-widest">
+                                        <div className="mt-1 flex items-center gap-1 type-label-wide text-royal/40">
                                             <Users size={10} />
                                             <span>{group.members.length} personer</span>
                                         </div>
@@ -374,7 +372,7 @@ export function GroupsView() {
                                     <div className="p-4 flex-1">
                                         <ul className="space-y-2">
                                             {group.members.map((member, mIdx) => (
-                                                <li key={mIdx} className="text-sm text-royal/80 border-b border-royal/5 last:border-0 pb-1 last:pb-0 font-sans">
+                                                <li key={mIdx} className="text-sm text-royal/80 pb-1 last:pb-0">
                                                     {member}
                                                 </li>
                                             ))}

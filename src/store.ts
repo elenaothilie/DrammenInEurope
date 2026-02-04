@@ -487,6 +487,13 @@ export const useStore = create<AppState>()(
             attachments: (row.attachments && Array.isArray(row.attachments) ? row.attachments : []) as BudgetAttachment[]
           }));
 
+          // Reconcile currentUser with fresh users (keep session across refresh; clear if user was removed)
+          const prevCurrentUser = get().currentUser;
+          const reconciledCurrentUser =
+            prevCurrentUser && users.find((u) => u.id === prevCurrentUser.id)
+              ? users.find((u) => u.id === prevCurrentUser.id) ?? null
+              : null;
+
           set((state) => ({
             users,
             days,
@@ -500,6 +507,7 @@ export const useStore = create<AppState>()(
             paymentTransactions,
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
+            currentUser: reconciledCurrentUser,
             isLoading: false
           }));
 
@@ -1654,13 +1662,12 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'travel-app-storage',
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         paymentMonths: state.paymentMonths,
         budgetItems: state.budgetItems,
+        currentUser: state.currentUser,
+        isAdmin: state.isAdmin,
       }),
-      onRehydrateStorage: () => (state) => {
-        state?.logout?.();
-      }
     }
   )
 );

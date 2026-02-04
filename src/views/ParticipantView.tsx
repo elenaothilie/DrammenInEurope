@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useStore } from '../store';
 
 const DEPARTURE_DATE = new Date('2026-10-07T00:00:00');
@@ -29,17 +29,14 @@ function useCountdown() {
   return remaining;
 }
 import { DayCard } from '../components/DayCard';
-import { SharpStar } from '../components/Star';
 import {
-    UserCircle,
     Bell,
     Users,
     Calendar,
     ClipboardList,
     Book,
     MessageCircle,
-    Camera,
-    Sparkles
+    Camera
 } from 'lucide-react';
 
 export function ParticipantView() {
@@ -47,6 +44,19 @@ export function ParticipantView() {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [avatarMenuOpen]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -109,17 +119,16 @@ export function ParticipantView() {
     };
 
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md bg-white/60 border border-royal/10 shadow-sm p-8 space-y-6">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="w-full max-w-md bg-white/60 border border-royal/10 shadow-sm p-6 sm:p-8 space-y-6">
           <div>
             <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-              <SharpStar size={12} />
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Innlogging</span>
+              <span className="type-label-wide">Innlogging</span>
             </div>
-            <h1 className="font-display font-extrabold text-3xl text-royal uppercase leading-none tracking-tight">
+            <h1 className="type-display-2 text-royal">
               Deltaker
             </h1>
-            <p className="text-royal/60 text-xs font-mono uppercase mt-2">
+            <p className="text-royal/60 type-label mt-2">
               Brukernavn = to første bokstaver i navnet. Passord = fødselsdato DDMMYY.
             </p>
           </div>
@@ -190,66 +199,61 @@ export function ParticipantView() {
   };
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
-       {/* Background Ambience */}
-       <SharpStar className="absolute top-32 left-1/4 text-royal w-4 h-4 animate-pulse opacity-60" />
-       <SharpStar className="absolute top-10 right-1/3 text-royal w-6 h-6 opacity-80" />
-       <SharpStar className="absolute bottom-20 left-10 text-royal w-12 h-12 opacity-10" />
-
-      <div className="max-w-4xl mx-auto px-6 py-12 relative z-10">
+    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-safe">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
         
         {/* Header */}
-        <header className="mb-12 flex flex-col md:flex-row justify-between items-end gap-8 border-b border-royal/10 pb-8">
-          <div>
-            <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-                <SharpStar size={12} />
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Programoversikt</span>
-            </div>
-            <h1 className="font-display font-extrabold text-4xl md:text-7xl text-royal uppercase leading-none tracking-tight">
+        <header className="mb-8 sm:mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 sm:gap-8 pb-6 sm:pb-8">
+          <div className="min-w-0 flex-1">
+            <h1 className="type-display-1 text-royal">
               Drammen<br/>In Europe
             </h1>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2 mb-1">
-               <span className="font-sans font-bold text-royal text-lg">Hei, {currentUser?.displayName}</span>
-               <UserCircle className="text-royal/80" />
-            </div>
-            <p className="font-mono text-xs text-royal/50 uppercase tracking-widest text-right max-w-[200px]">
-              Du er logget inn som deltaker.
-            </p>
+          <div className="relative flex items-center gap-2 sm:gap-3 shrink-0" ref={avatarMenuRef}>
+            <span className="font-bold text-royal text-base sm:text-lg truncate max-w-[140px] sm:max-w-none">{currentUser?.displayName}</span>
             <button
               type="button"
-              onClick={logout}
-              className="text-royal/60 hover:text-royal text-xs font-mono uppercase tracking-widest"
+              onClick={() => setAvatarMenuOpen((o) => !o)}
+              className="w-10 h-10 rounded-full bg-royal/15 text-royal flex items-center justify-center font-display font-bold text-sm hover:bg-royal/25 focus:outline-none focus:ring-2 focus:ring-royal/40 transition-colors"
+              aria-label="Åpne meny"
+              aria-expanded={avatarMenuOpen}
             >
-              Logg ut
+              {(currentUser?.displayName || currentUser?.fullName || '?').charAt(0).toUpperCase()}
             </button>
+            {avatarMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 py-1 min-w-[140px] bg-white border border-royal/10 shadow-lg rounded-sm z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatarMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-left px-4 py-2 type-label text-royal hover:bg-royal/10 transition-colors"
+                >
+                  Logg ut
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
         {/* Countdown to Departure */}
-        <div className="mb-16 p-8 md:p-12 bg-gradient-to-br from-royal via-royal-dark to-royal rounded-lg shadow-[8px_8px_0_0_rgba(0,47,167,0.3)] border-2 border-royal-dark relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <SharpStar className="absolute top-4 left-8 w-12 h-12 text-white animate-pulse" />
-            <SharpStar className="absolute top-8 right-12 w-8 h-8 text-white animate-pulse" style={{ animationDelay: '0.5s' }} />
-            <SharpStar className="absolute bottom-8 left-1/4 w-10 h-10 text-white animate-pulse" style={{ animationDelay: '1s' }} />
-            <SharpStar className="absolute bottom-4 right-1/3 w-6 h-6 text-white animate-pulse" style={{ animationDelay: '0.3s' }} />
-          </div>
+        <div className="mb-10 sm:mb-16 p-6 sm:p-8 md:p-12 bg-linear-to-br from-royal via-royal-dark to-royal shadow-[8px_8px_0_0_rgba(0,47,167,0.3)] border-2 border-royal-dark relative overflow-hidden">
           <div className="relative z-10 text-center">
-            <p className="font-mono text-white/80 text-xs md:text-sm uppercase tracking-[0.3em] mb-2">
+            <p className="type-label-wide text-white/80 md:text-sm mb-2">
               Avreisedag — 7. oktober 2026
             </p>
-            <h2 className="font-display font-extrabold text-white text-2xl md:text-3xl uppercase tracking-tight mb-8">
+            <h2 className="type-display-2 text-white mb-6 sm:mb-8">
               Snart er vi på tur!
             </h2>
             {countdown ? (
               countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0 ? (
-                <p className="font-display font-extrabold text-4xl md:text-6xl text-white uppercase tracking-tight animate-pulse">
+                <p className="type-display-1 text-white animate-pulse text-center">
                   🎉 I dag er avreisedagen! 🎉
                 </p>
               ) : (
-                <div className="grid grid-cols-4 gap-4 md:gap-8 max-w-2xl mx-auto">
+                <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-8 max-w-2xl mx-auto">
                   {[
                     { value: countdown.days, label: 'dager' },
                     { value: countdown.hours, label: 'timer' },
@@ -257,10 +261,10 @@ export function ParticipantView() {
                     { value: countdown.seconds, label: 'sek' },
                   ].map(({ value, label }) => (
                     <div key={label} className="flex flex-col items-center">
-                      <span className="font-display font-extrabold text-3xl md:text-5xl lg:text-6xl text-white tabular-nums min-w-[2ch] md:min-w-[3ch] drop-shadow-sm">
+                      <span className="type-display-1 text-white tabular-nums min-w-[2ch] drop-shadow-sm text-[1.75rem] sm:text-[2.5rem] md:text-[4rem] lg:text-[4.5rem]">
                         {String(value).padStart(2, '0')}
                       </span>
-                      <span className="font-mono text-white/70 text-[10px] md:text-xs uppercase tracking-widest mt-1">
+                      <span className="type-label-wide text-white/70 md:text-xs mt-1">
                         {label}
                       </span>
                     </div>
@@ -276,15 +280,15 @@ export function ParticipantView() {
         </div>
 
         {/* Navigation Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-16 animate-stagger">
             {menuItems.map((item) => (
                 <Link 
                     key={item.path} 
                     to={item.path}
-                    className="bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-royal/10 p-4 flex flex-col items-center justify-center text-center gap-3 group transition-all hover:-translate-y-1"
+                    className="touch-target bg-white/40 hover:bg-white/60 active:bg-white/70 backdrop-blur-sm border border-royal/10 p-4 flex flex-col items-center justify-center text-center gap-2 sm:gap-3 group transition-all hover:-translate-y-1 active:translate-y-0 rounded-sm"
                 >
-                    <item.icon size={24} className="text-royal/80 group-hover:text-royal group-hover:scale-110 transition-all" />
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-royal">{item.label}</span>
+                    <item.icon size={22} className="sm:w-6 sm:h-6 text-royal/80 group-hover:text-royal group-hover:scale-110 transition-all shrink-0" />
+                    <span className="type-label text-royal leading-tight">{item.label}</span>
                 </Link>
             ))}
         </div>
@@ -292,24 +296,20 @@ export function ParticipantView() {
         {/* Payment Overview */}
         <div className="mb-16">
           <div className="flex items-center gap-3 text-royal mb-4 opacity-60">
-            <SharpStar size={12} />
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Betalingsplan</span>
+            <span className="type-label-wide">Betalingsplan</span>
           </div>
-          <div className="bg-gradient-to-br from-white via-white to-royal/5 border border-royal/10 p-6 shadow-sm space-y-6 relative overflow-hidden">
-            <div className="absolute -top-8 -right-6 text-royal/10">
-              <Sparkles size={80} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm relative z-10">
+          <div className="bg-linear-to-br from-white via-paper/50 to-royal/10 border border-royal/10 p-4 sm:p-6 shadow-sm space-y-5 sm:space-y-6 relative overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm relative z-10">
               <div>
-                <p className="font-mono text-[10px] uppercase text-royal/50">Plan</p>
+                <p className="type-label-wide text-royal/50">Plan</p>
                 <p className="text-royal font-bold uppercase">Månedlig</p>
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase text-royal/50">Beløp</p>
+                <p className="type-label-wide text-royal/50">Beløp</p>
                 <p className="text-royal font-bold">350 kr / mnd</p>
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase text-royal/50">Vipps</p>
+                <p className="type-label-wide text-royal/50">Vipps</p>
                 <a
                   href="#"
                   className="text-royal font-bold underline decoration-royal/30 underline-offset-2 hover:decoration-royal"
@@ -319,19 +319,19 @@ export function ParticipantView() {
               </div>
             </div>
 
-            <div className="border-t border-royal/10 pt-6 space-y-5 relative z-10">
+            <div className="pt-6 space-y-5 relative z-10">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p className="font-mono text-[10px] uppercase text-royal/50">Betalt totalt</p>
-                  <p className="text-royal font-display font-bold text-3xl tracking-tight">
+                  <p className="type-label-wide text-royal/50">Betalt totalt</p>
+                  <p className="text-royal font-display font-bold text-3xl leading-none">
                     {totalPaidAmount} kr
                   </p>
-                  <p className="text-royal/50 text-xs font-mono uppercase mt-1">
+                  <p className="text-royal/50 type-label mt-1">
                     Gjenstår {remainingAmount} kr
                   </p>
                 </div>
                 <div className="flex items-end gap-4">
-                  <div className="text-right text-xs text-royal/60 font-mono uppercase">
+                  <div className="text-right type-label text-royal/60">
                     {totalPaidMonths} / {paymentPlanMonths.length} måneder
                   </div>
                   <div className="flex flex-col-reverse gap-1">
@@ -350,19 +350,19 @@ export function ParticipantView() {
               </div>
               <div className="w-full h-2.5 bg-royal/10 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-royal via-royal-dark to-royal transition-all"
+                  className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
 
-              <p className="font-mono text-[10px] uppercase text-royal/50 mb-2">Betalt måneder</p>
+              <p className="type-label-wide text-royal/50 mb-2">Betalt måneder</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
                 {paymentPlanMonths.map((month) => {
                   const isPaid = paidMonths.has(month.key);
                   return (
                   <label
                     key={month.key}
-                    className="flex items-center gap-2 border border-royal/10 rounded-sm px-2 py-2 text-royal/80 hover:border-royal/30 transition-colors cursor-pointer"
+                    className="touch-target flex items-center gap-2 border border-royal/10 rounded-sm px-2 py-2.5 sm:py-2 text-royal/80 hover:border-royal/30 active:border-royal/40 transition-colors cursor-pointer"
                   >
                     <input
                       type="checkbox"
@@ -376,7 +376,7 @@ export function ParticipantView() {
                   </label>
                 )})}
               </div>
-              <p className="text-royal/40 text-[10px] font-mono uppercase mt-3">
+              <p className="text-royal/40 type-label-wide mt-3">
                 Huk av når du har betalt for måneden. Siste betaling er Oktober 2026.
               </p>
             </div>
@@ -384,10 +384,9 @@ export function ParticipantView() {
         </div>
 
         {/* Day Cards */}
-        <div className="space-y-6">
+        <div className="space-y-6 animate-stagger">
             <div className="flex items-center gap-3 text-royal mb-4 opacity-60">
-                <SharpStar size={12} />
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Dag for dag</span>
+                <span className="type-label-wide">Dag for dag</span>
             </div>
           {days.map(day => (
             <DayCard key={day.id} day={day} />

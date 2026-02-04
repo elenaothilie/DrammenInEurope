@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SharpStar } from '../components/Star';
 import { ArrowLeft, Edit2, Save, CheckSquare, Square, Luggage, Sun, Camera, Shirt, BriefcaseMedical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
@@ -131,26 +130,25 @@ export function PackingListView() {
   const progress = Math.round((totalChecked / totalItems) * 100) || 0;
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
-      <div className="max-w-4xl mx-auto px-6 py-12 relative z-10">
-        <header className="mb-8">
+    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-safe">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+        <header className="mb-6 sm:mb-8">
             <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
                 <ArrowLeft size={20} />
-                <span className="font-mono text-xs uppercase tracking-widest">Tilbake</span>
+                <span className="type-label">Tilbake</span>
             </Link>
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-                        <SharpStar size={12} />
-                        <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Forberedelser</span>
+                        <span className="type-label-wide">Forberedelser</span>
                     </div>
-                    <h1 className="font-display font-extrabold text-3xl md:text-6xl text-royal uppercase leading-none tracking-tight">
+                    <h1 className="type-display-1 text-royal">
                         Pakkeliste
                     </h1>
                 </div>
                 {isAdmin && (
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
+                        <span className="type-label-wide text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
                         <button 
                             onClick={() => setIsEditing(!isEditing)}
                             className="bg-royal/10 hover:bg-royal/20 text-royal p-3 rounded-full transition-colors"
@@ -164,7 +162,7 @@ export function PackingListView() {
 
         {isEditing ? (
             <div className="space-y-4">
-                 <div className="bg-royal/5 p-4 rounded-lg mb-4">
+                 <div className="bg-royal/5 p-4 mb-4">
                     <h3 className="font-bold text-royal text-sm mb-2">Rediger JSON Data</h3>
                     <p className="text-xs text-royal/80">
                         Endre kategoriene ved å redigere JSON-strukturen.
@@ -172,7 +170,7 @@ export function PackingListView() {
                     </p>
                 </div>
                 <textarea 
-                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
+                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none type-body type-long"
                     value={editJson}
                     onChange={(e) => setEditJson(e.target.value)}
                 />
@@ -185,7 +183,7 @@ export function PackingListView() {
                         <Luggage size={120} strokeWidth={1} />
                      </div>
                     <div className="flex justify-between items-end mb-2 relative z-10">
-                        <span className="font-mono text-xs uppercase tracking-widest text-royal/60">Din progresjon</span>
+                        <span className="type-label text-royal/60">Din progresjon</span>
                         <span className="font-display font-bold text-2xl text-royal">{progress}%</span>
                     </div>
                     <div className="h-2 bg-royal/10 rounded-full overflow-hidden relative z-10">
@@ -201,7 +199,7 @@ export function PackingListView() {
                         const Icon = getIcon(category.icon);
                         return (
                             <div key={category.id} className="bg-white p-8 border border-royal/10 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-                                <div className="flex items-center gap-4 mb-6 border-b border-royal/5 pb-4">
+                                <div className="flex items-center gap-4 mb-6 pb-4">
                                     <div className="w-10 h-10 rounded-full bg-royal/5 flex items-center justify-center text-royal">
                                         <Icon size={20} />
                                     </div>
@@ -227,7 +225,7 @@ export function PackingListView() {
                                                     {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                                 </div>
                                                 <span className={clsx(
-                                                    "text-sm font-sans text-royal transition-all decoration-1 underline-offset-2",
+                                                    "text-sm text-royal transition-all decoration-1 underline-offset-2",
                                                     isChecked && "line-through decoration-royal/40"
                                                 )}>
                                                     {item.label}
@@ -243,7 +241,7 @@ export function PackingListView() {
                 
                 {progress === 100 && (
                     <div className="mt-12 text-center animate-bounce">
-                        <span className="inline-block px-4 py-2 bg-royal text-white font-mono text-xs uppercase tracking-widest rounded-full shadow-lg">
+                        <span className="inline-block px-4 py-2 bg-royal text-white type-label rounded-full shadow-lg">
                             Klar for avreise! ✈️
                         </span>
                     </div>

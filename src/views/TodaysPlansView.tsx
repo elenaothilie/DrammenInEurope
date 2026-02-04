@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { SharpStar } from '../components/Star';
 import { ArrowLeft, Edit2, Save, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
@@ -83,26 +82,25 @@ export function TodaysPlansView() {
   const activeDay = plans[activeDayIndex] || plans[0];
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-32">
-      <div className="max-w-2xl mx-auto px-6 py-12 relative z-10">
-        <header className="mb-12">
+    <div className="min-h-screen bg-paper relative overflow-x-hidden selection:bg-royal selection:text-white pb-safe">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10">
+        <header className="mb-8 sm:mb-12">
             <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-royal/60 hover:text-royal mb-6 transition-colors">
                 <ArrowLeft size={20} />
-                <span className="font-mono text-xs uppercase tracking-widest">Tilbake</span>
+                <span className="type-label">Tilbake</span>
             </Link>
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex items-center gap-3 text-royal mb-2 opacity-60">
-                        <SharpStar size={12} />
-                        <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Oversikt</span>
+                        <span className="type-label-wide">Oversikt</span>
                     </div>
-                    <h1 className="font-display font-extrabold text-3xl md:text-6xl text-royal uppercase leading-none tracking-tight">
+                    <h1 className="type-display-1 text-royal">
                         Dagens Planer
                     </h1>
                 </div>
                 {isAdmin && (
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
+                        <span className="type-label-wide text-royal/40 bg-royal/5 px-2 py-1 rounded">Admin Mode</span>
                         <button 
                             onClick={() => setIsEditing(!isEditing)}
                             className="bg-royal/10 hover:bg-royal/20 text-royal p-3 rounded-full transition-colors"
@@ -116,14 +114,14 @@ export function TodaysPlansView() {
 
         {isEditing ? (
             <div className="space-y-4">
-                 <div className="bg-royal/5 p-4 rounded-lg mb-4">
+                 <div className="bg-royal/5 p-4 mb-4">
                     <h3 className="font-bold text-royal text-sm mb-2">Rediger JSON Data</h3>
                     <p className="text-xs text-royal/80">
                         Endre planene ved å redigere JSON-strukturen direkte. Pass på komma og klammer.
                     </p>
                 </div>
                 <textarea 
-                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none font-mono text-sm leading-relaxed rounded-lg"
+                    className="w-full h-[60vh] bg-white border-2 border-royal/20 p-4 focus:border-royal focus:outline-none type-body type-long"
                     value={editJson}
                     onChange={(e) => setEditJson(e.target.value)}
                 />
@@ -137,7 +135,7 @@ export function TodaysPlansView() {
                             key={idx}
                             onClick={() => setActiveDayIndex(idx)}
                             className={clsx(
-                                "px-6 py-2 rounded-full font-mono text-xs uppercase tracking-widest whitespace-nowrap transition-all border",
+                                "px-6 py-2 rounded-full type-label whitespace-nowrap transition-all border",
                                 activeDayIndex === idx 
                                     ? "bg-royal text-white border-royal" 
                                     : "bg-white text-royal border-royal/10 hover:border-royal/40"
@@ -153,7 +151,7 @@ export function TodaysPlansView() {
                     {activeDay?.events.map((event, idx) => (
                         <div key={idx} className="relative group">
                             {/* Time Bubble */}
-                            <div className="absolute -left-[45px] top-0 bg-paper border-2 border-royal/10 text-royal font-mono text-[10px] font-bold py-1 px-2 rounded-md shadow-sm group-hover:border-royal transition-colors">
+                            <div className="absolute -left-[45px] top-0 bg-paper border-2 border-royal/10 text-royal type-label-wide font-bold py-1 px-2 rounded-md shadow-sm group-hover:border-royal transition-colors">
                                 {event.time}
                             </div>
                             
@@ -161,7 +159,7 @@ export function TodaysPlansView() {
                             <div className="absolute -left-[9px] top-2 w-4 h-4 rounded-full bg-royal border-4 border-paper shadow-sm group-hover:scale-125 transition-transform"></div>
 
                             {/* Content Card */}
-                            <div className="bg-white p-6 rounded-lg border border-royal/5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 hover:border-royal/20 relative overflow-hidden">
+                            <div className="bg-white p-6 border border-royal/5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 hover:border-royal/20 relative overflow-hidden animate-fade-in-up">
                                 {/* Type indicator strip */}
                                 <div className={clsx(
                                     "absolute top-0 left-0 bottom-0 w-1",
@@ -174,14 +172,14 @@ export function TodaysPlansView() {
                                 <h3 className="font-display font-bold text-xl text-royal mb-1">{event.title}</h3>
                                 
                                 {event.location && (
-                                    <div className="flex items-center gap-1 text-royal/60 mb-3 text-xs font-mono uppercase tracking-wider">
+                                    <div className="flex items-center gap-1 text-royal/60 mb-3 type-label">
                                         <MapPin size={12} />
                                         {event.location}
                                     </div>
                                 )}
                                 
                                 {event.description && (
-                                    <p className="text-royal/80 text-sm leading-relaxed font-sans">
+                                    <p className="text-royal/80 text-sm leading-relaxed">
                                         {event.description}
                                     </p>
                                 )}
