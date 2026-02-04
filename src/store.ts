@@ -139,6 +139,7 @@ interface AppState {
   paymentTransactions: PaymentTransaction[];
   paymentMonths: PaymentMonth[];
   budgetItems: BudgetItem[];
+  budgetItemsError: string | null;
   isLoading: boolean;
   error: string | null;
   
@@ -228,6 +229,7 @@ export const useStore = create<AppState>()(
       paymentTransactions: [],
       paymentMonths: [],
       budgetItems: [],
+      budgetItemsError: null,
       isLoading: false,
       error: null,
 
@@ -354,7 +356,7 @@ export const useStore = create<AppState>()(
           if (paymentMonthsError) console.error("Payment months fetch error:", paymentMonthsError);
           if (budgetItemsError) console.error("Budget items fetch error:", budgetItemsError);
 
-          // Map Data to Store Format
+          // Map Data to Store Format (budgetItemsError is stored below)
           const users: User[] = (profiles || []).map((p: any) => ({
             id: p.id,
             fullName: p.full_name,
@@ -507,6 +509,7 @@ export const useStore = create<AppState>()(
             paymentTransactions,
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
+            budgetItemsError: budgetItemsError ? budgetItemsError.message : null,
             currentUser: reconciledCurrentUser,
             isLoading: false
           }));

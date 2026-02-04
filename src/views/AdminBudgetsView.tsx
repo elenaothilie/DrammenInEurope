@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 import type { BudgetCategory, BudgetItem } from '../types';
-import { Lock, LogOut, ArrowLeft, Plus, Trash2, Download, Edit2, ChevronDown, ChevronUp, Bell, FileText, Paperclip, X, ExternalLink } from 'lucide-react';
+import { Lock, LogOut, ArrowLeft, Plus, Trash2, Download, Edit2, ChevronDown, ChevronUp, Bell, FileText, Paperclip, X, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
 const CATEGORY_LABELS: Record<BudgetCategory, string> = {
@@ -37,6 +37,8 @@ export function AdminBudgetsView() {
     isAdmin,
     loginAdmin,
     budgetItems,
+    budgetItemsError,
+    fetchData,
     users,
     addBudgetItem,
     updateBudgetItem,
@@ -206,6 +208,26 @@ export function AdminBudgetsView() {
           </button>
         </div>
       </div>
+
+      {budgetItemsError && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pt-4">
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle size={20} className="shrink-0 text-red-600" />
+              <span className="font-mono text-sm">
+                Budsjett kunne ikke lastes fra Supabase: {budgetItemsError}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchData()}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-mono text-xs uppercase rounded border border-red-200"
+            >
+              <RefreshCw size={14} /> Prøv igjen
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-12 space-y-8 sm:space-y-10">
         {/* Budget overview: overall + per person */}

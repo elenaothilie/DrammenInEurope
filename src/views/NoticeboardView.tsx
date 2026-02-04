@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Save, Inbox } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import clsx from 'clsx';
 
 export function NoticeboardView() {
   const { isAdmin, infoPages, updateInfoPage } = useStore();
