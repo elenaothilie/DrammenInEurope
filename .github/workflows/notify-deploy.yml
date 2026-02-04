@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# Notify Telegram when a push to main triggers a Vercel deployment.
+# Reports success or failure by checking Vercel API after a short wait.
+#
+# Required GitHub secrets:
+#   NOTIFY_URL     - Your production URL (e.g. https://yourapp.vercel.app) — used to call the notify API
+#   NOTIFY_SECRET  - Optional. Must match NOTIFY_SECRET in Vercel env if you set it.
+#
+# Optional (to get real deployment success/failure from Vercel):
+#   VERCEL_TOKEN   - Vercel API token (Account Settings → Tokens)
+#   VERCEL_PROJECT_ID - Project ID from Vercel project settings (e.g. prj_xxx) or project name
+
+name: Notify deploy to Telegram
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Custom repo secrets (add in Settings → Secrets and variables → Actions).
+    # The IDE may warn "Context access might be invalid" — that's expected for custom secret names.
+    env:
+      NOTIFY_URL: ${{ secrets.NOTIFY_URL }}
+      NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Wait for Vercel deployment
+        run: sleep 150
+        # Give Vercel time to build (adjust if your builds are slower)
+
+      - name: Get Vercel deployment status
+        id: vercel
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "status=triggered" >> $GITHUB_OUTPUT
+            echo "message=Deployment triggered (set VERCEL_TOKEN and VERCEL_PROJECT_ID for success/failure)" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          res=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&sha=${GITHUB_SHA}&target=production")
+          state=$(echo "$res" | jq -r '.deployments[0].state // "UNKNOWN"')
+          url=$(echo "$res" | jq -r '.deployments[0].url // ""')
+          if [ "$state" = "READY" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=Deployment succeeded" >> $GITHUB_OUTPUT
+            echo "url=$url" >> $GITHUB_OUTPUT
+          elif [ "$state" = "ERROR" ] || [ "$state" = "CANCELED" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            err=$(echo "$res" | jq -r '.deployments[0].errorMessage // "Unknown error"' | head -c 200)
+            echo "message=Deployment failed: $err" >> $GITHUB_OUTPUT
+            echo "url=" >> $GITHUB_OUTPUT
+          else
+            echo "status=pending" >> $GITHUB_OUTPUT
+            echo "message=Deployment still in progress (state: $state)" >> $GITHUB_OUTPUT
+            echo "url=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send to Telegram
+        env:
+          STATUS: ${{ steps.vercel.outputs.status }}
+          VERCEL_MSG: ${{ steps.vercel.outputs.message }}
+          DEPLOY_URL: ${{ steps.vercel.outputs.url }}
+          GITHUB_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$NOTIFY_URL" ]; then
+            echo "NOTIFY_URL secret is not set. Skipping Telegram notification."
+            exit 0
+          fi
+          short_sha="${GITHUB_SHA:0:7}"
+          first_line=$(echo "$COMMIT_MSG" | head -n1 | head -c 80)
+          if [ "$STATUS" = "success" ]; then
+            emoji="✅"
+          elif [ "$STATUS" = "failure" ]; then
+            emoji="❌"
+          else
+            emoji="🔄"
+          fi
+          text="${emoji} <b>DrammenInEurope</b> deploy: ${STATUS}
+          ${VERCEL_MSG}
+          Commit: <code>${short_sha}</code> — ${first_line}
+          Repo: ${REPO}"
+          [ -n "$DEPLOY_URL" ] && text="${text}
+          URL: ${DEPLOY_URL}"
+          payload=$(jq -n --arg msg "$text" '{message: $msg}')
+          if [ -n "$NOTIFY_SECRET" ]; then
+            payload=$(echo "$payload" | jq -c --arg s "$NOTIFY_SECRET" '. + {secret: $s}')
+          fi
+          base="${NOTIFY_URL%/}"
+          curl -s -X POST "${base}/api/notify-telegram" \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            -w "\nHTTP %{http_code}\n" || true
