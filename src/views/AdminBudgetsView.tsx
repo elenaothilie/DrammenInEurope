@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore, selectIsAdmin } from '../store';
 import type { BudgetCategory, BudgetItem } from '../types';
-import { Lock, LogOut, ArrowLeft, Plus, Trash2, Download, Edit2, ChevronDown, ChevronUp, Bell, FileText, Paperclip, X, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
+import { LogOut, ArrowLeft, Plus, Trash2, Download, Edit2, ChevronDown, ChevronUp, Bell, FileText, Paperclip, X, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
 const CATEGORY_LABELS: Record<BudgetCategory, string> = {
