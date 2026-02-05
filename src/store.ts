@@ -159,6 +159,7 @@ interface AppState {
   budgetItems: BudgetItem[];
   /** Section IDs hidden on participant view (admin-configurable). */
   participantHiddenSections: string[];
+  budgetItemsError: string | null;
   isLoading: boolean;
   error: string | null;
   
@@ -255,6 +256,7 @@ export const useStore = create<AppState>()(
       paymentMonths: [],
       budgetItems: [],
       participantHiddenSections: [],
+      budgetItemsError: null,
       isLoading: false,
       error: null,
 
@@ -400,7 +402,7 @@ export const useStore = create<AppState>()(
             ? ((appSettingsData as { value: string[] }).value)
             : [];
 
-          // Map Data to Store Format
+          // Map Data to Store Format (budgetItemsError is stored below)
           const users: User[] = (profiles || []).map((p: any) => ({
             id: p.id,
             fullName: p.full_name,
@@ -554,6 +556,7 @@ export const useStore = create<AppState>()(
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
             participantHiddenSections,
+            budgetItemsError: budgetItemsError ? budgetItemsError.message : null,
             currentUser: reconciledCurrentUser,
             adminUserIds,
             isLoading: false

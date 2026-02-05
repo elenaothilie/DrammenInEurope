@@ -1,5 +1,30 @@
 # React + TypeScript + Vite
 
+## Deploy notifications (Telegram)
+
+On each push to `main`, a GitHub Action notifies your Telegram group about the Vercel deployment (success or failure).
+
+### 1. Vercel environment variables
+
+In your Vercel project → Settings → Environment Variables, add:
+
+- `TELEGRAM_BOT_TOKEN` – from [@BotFather](https://t.me/BotFather)
+- `TELEGRAM_GROUP_ID` – the group chat ID (e.g. `-1001234567890`)
+- `NOTIFY_SECRET` (optional) – a shared secret so only the workflow can call the notify API
+
+### 2. GitHub secrets
+
+In the repo → Settings → Secrets and variables → Actions, add:
+
+- **`NOTIFY_URL`** (required) – production URL, e.g. `https://yourapp.vercel.app`
+- **`NOTIFY_SECRET`** (optional) – same value as in Vercel if you use it
+- **`VERCEL_TOKEN`** (optional) – [Vercel API token](https://vercel.com/account/tokens) so the workflow can report real success/failure
+- **`VERCEL_PROJECT_ID`** (optional) – from Vercel project settings (e.g. `prj_xxx`) or the project name
+
+Without `VERCEL_TOKEN` and `VERCEL_PROJECT_ID`, the message will say “Deployment triggered” only.
+
+---
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
