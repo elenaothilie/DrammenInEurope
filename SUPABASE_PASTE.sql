@@ -137,6 +137,29 @@ create table if not exists app_settings (
   updated_at timestamptz default now()
 );
 
+-- Minor events: goal, attendees, duration, status, type, tagged participants, notes, todos, program
+create table if not exists minor_events (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null default 'Ny arrangement',
+  event_date date,
+  location text,
+  goal text,
+  expected_attendees int,
+  duration text,
+  status text,
+  event_type text,
+  preparation_deadline date,
+  equipment_list jsonb default '[]'::jsonb,
+  rain_plan text,
+  reminder_list jsonb default '[]'::jsonb,
+  notes text,
+  todos jsonb default '[]'::jsonb,
+  program jsonb default '[]'::jsonb,
+  sort_order int default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create table if not exists budget_items (
   id uuid primary key default uuid_generate_v4(),
   category text not null check (category in ('meals', 'activities', 'transportation', 'staying_places', 'equipment', 'administration', 'buffer', 'other')),
@@ -165,6 +188,7 @@ alter table payment_transactions enable row level security;
 alter table payment_months enable row level security;
 alter table admin_users enable row level security;
 alter table app_settings enable row level security;
+alter table minor_events enable row level security;
 alter table budget_items enable row level security;
 
 drop policy if exists "Enable all access for profiles" on profiles;
@@ -180,6 +204,7 @@ drop policy if exists "Enable all access for payment_transactions" on payment_tr
 drop policy if exists "Enable all access for payment_months" on payment_months;
 drop policy if exists "Enable all access for admin_users" on admin_users;
 drop policy if exists "Enable all access for app_settings" on app_settings;
+drop policy if exists "Enable all access for minor_events" on minor_events;
 drop policy if exists "Enable all access for budget_items" on budget_items;
 
 create policy "Enable all access for profiles" on profiles for all using (true) with check (true);
@@ -195,6 +220,7 @@ create policy "Enable all access for payment_transactions" on payment_transactio
 create policy "Enable all access for payment_months" on payment_months for all using (true) with check (true);
 create policy "Enable all access for admin_users" on admin_users for all using (true) with check (true);
 create policy "Enable all access for app_settings" on app_settings for all using (true) with check (true);
+create policy "Enable all access for minor_events" on minor_events for all using (true) with check (true);
 create policy "Enable all access for budget_items" on budget_items for all using (true) with check (true);
 
 -- Migrations: add columns if missing
@@ -241,6 +267,42 @@ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'budget_items' and column_name = 'attachments') then
     alter table budget_items add column attachments jsonb default '[]'::jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'goal') then
+    alter table minor_events add column goal text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'expected_attendees') then
+    alter table minor_events add column expected_attendees int;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'duration') then
+    alter table minor_events add column duration text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'status') then
+    alter table minor_events add column status text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'event_type') then
+    alter table minor_events add column event_type text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'tagged_participant_ids') then
+    alter table minor_events add column tagged_participant_ids jsonb default '[]'::jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'preparation_deadline') then
+    alter table minor_events add column preparation_deadline date;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'equipment_list') then
+    alter table minor_events add column equipment_list jsonb default '[]'::jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'reminder_list') then
+    alter table minor_events add column reminder_list jsonb default '[]'::jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'rain_plan') then
+    alter table minor_events add column rain_plan text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'reminders') then
+    alter table minor_events add column reminders text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'equipment_needed') then
+    alter table minor_events add column equipment_needed text;
   end if;
 end $$;
 

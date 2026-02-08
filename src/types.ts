@@ -197,3 +197,64 @@ export interface BudgetItem {
   /** Vedlegg (avtaler, kvitteringer osv.) */
   attachments?: BudgetAttachment[];
 }
+
+/** Todo item for a minor event (e.g. feast with youth). */
+export interface MinorEventTodo {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+/** Program slot: time, activity name, responsible person (tagged participant or free text). */
+export interface MinorEventProgramSlot {
+  id: string;
+  time: string;
+  activity: string;
+  /** Display name (used when no userId, or as fallback). */
+  responsible: string;
+  /** When set, responsible is a tagged participant (user id). */
+  responsibleUserId?: string;
+}
+
+/** Status of a minor event. */
+export type MinorEventStatus = 'draft' | 'confirmed' | 'done';
+
+/** Single reminder with optional date (ISO date) for when to be reminded. */
+export interface MinorEventReminder {
+  id: string;
+  text: string;
+  /** Date to be reminded (ISO date string). */
+  reminderDate?: string;
+}
+
+/** Minor event within the trip: feast, gathering, etc. */
+export interface MinorEvent {
+  id: string;
+  title: string;
+  eventDate?: string;
+  location?: string;
+  /** Goal/purpose of the event. */
+  goal?: string;
+  /** Expected number of attendees. */
+  expectedAttendees?: number;
+  /** Duration e.g. "2 timer", "ettermiddag". */
+  duration?: string;
+  /** Event status. */
+  status?: MinorEventStatus;
+  /** Type e.g. "Fest", "Møte", "Aktivitet". */
+  eventType?: string;
+  /** Deadline for preparations (ISO date). */
+  preparationDeadline?: string;
+  /** List of equipment/materials needed. */
+  equipmentList: string[];
+  /** Plan B / alternative if weather or other cancels. */
+  rainPlan?: string;
+  /** Reminders with optional date for when to be reminded. */
+  reminders: MinorEventReminder[];
+  notes?: string;
+  todos: MinorEventTodo[];
+  program: MinorEventProgramSlot[];
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase, hasValidSupabaseEnv } from './lib/supabaseClient';
-import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment } from './types';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment, MinorEvent, MinorEventReminder } from './types';
 
 type ExportKind =
   | 'users'
@@ -157,6 +157,7 @@ interface AppState {
   paymentTransactions: PaymentTransaction[];
   paymentMonths: PaymentMonth[];
   budgetItems: BudgetItem[];
+  minorEvents: MinorEvent[];
   /** Section IDs hidden on participant view (admin-configurable). */
   participantHiddenSections: string[];
   budgetItemsError: string | null;
@@ -220,6 +221,12 @@ interface AppState {
   updateBudgetItem: (id: string, data: Partial<BudgetItem>) => Promise<void>;
   removeBudgetItem: (id: string) => Promise<void>;
   uploadBudgetAttachment: (budgetItemId: string, file: File) => Promise<void>;
+
+  // Minor events (admin planning: feast, etc.)
+  addMinorEvent: () => Promise<void>;
+  updateMinorEvent: (id: string, data: Partial<MinorEvent>) => Promise<void>;
+  removeMinorEvent: (id: string) => Promise<void>;
+  reorderMinorEventProgram: (eventId: string, fromIndex: number, toIndex: number) => void;
   
   // Placeholder
   adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
@@ -255,6 +262,7 @@ export const useStore = create<AppState>()(
       paymentTransactions: [],
       paymentMonths: [],
       budgetItems: [],
+      minorEvents: [],
       participantHiddenSections: [],
       budgetItemsError: null,
       isLoading: false,
@@ -371,6 +379,7 @@ export const useStore = create<AppState>()(
             { data: paymentTransactionsData, error: paymentTransactionsError },
             { data: paymentMonthsData, error: paymentMonthsError },
             { data: budgetItemsData, error: budgetItemsError },
+            { data: minorEventsData, error: minorEventsError },
             { data: adminUsersData, error: adminUsersError },
             { data: appSettingsData }
           ] = await Promise.all([
@@ -386,6 +395,7 @@ export const useStore = create<AppState>()(
             supabase.from('payment_transactions').select('*').order('created_at', { ascending: false }),
             supabase.from('payment_months').select('*').order('month', { ascending: true }),
             supabase.from('budget_items').select('*').order('sort_order', { ascending: true }),
+            supabase.from('minor_events').select('*').order('sort_order', { ascending: true }),
             supabase.from('admin_users').select('user_id'),
             supabase.from('app_settings').select('value').eq('key', 'participant_hidden_sections').maybeSingle()
           ]);
@@ -402,6 +412,7 @@ export const useStore = create<AppState>()(
           if (paymentTransactionsError) console.error("Payment transactions fetch error:", paymentTransactionsError);
           if (paymentMonthsError) console.error("Payment months fetch error:", paymentMonthsError);
           if (budgetItemsError) console.error("Budget items fetch error:", budgetItemsError);
+          if (minorEventsError) console.error("Minor events fetch error:", minorEventsError);
           if (adminUsersError) console.error("Admin users fetch error:", adminUsersError);
 
           const adminUserIds: string[] = (adminUsersData || []).map((row: { user_id: string }) => row.user_id);
@@ -542,6 +553,46 @@ export const useStore = create<AppState>()(
             attachments: (row.attachments && Array.isArray(row.attachments) ? row.attachments : []) as BudgetAttachment[]
           }));
 
+          const minorEvents: MinorEvent[] = (minorEventsData || []).map((row: any) => ({
+            id: row.id,
+            title: row.title || 'Ny arrangement',
+            eventDate: row.event_date ?? undefined,
+            location: row.location ?? undefined,
+            goal: row.goal ?? undefined,
+            expectedAttendees: row.expected_attendees ?? undefined,
+            duration: row.duration ?? undefined,
+            status: row.status ?? undefined,
+            eventType: row.event_type ?? undefined,
+            preparationDeadline: row.preparation_deadline ?? undefined,
+            equipmentList: Array.isArray(row.equipment_list) ? row.equipment_list : (row.equipment_needed ? String(row.equipment_needed).split(/\n/).map((s: string) => s.trim()).filter(Boolean) : []),
+            rainPlan: row.rain_plan ?? undefined,
+            reminders: (() => {
+              if (Array.isArray(row.reminder_list) && row.reminder_list.length > 0) {
+                return row.reminder_list.map((r: any) => ({
+                  id: r.id ?? crypto.randomUUID(),
+                  text: r.text ?? '',
+                  reminderDate: r.reminderDate ?? r.reminder_date ?? undefined
+                }));
+              }
+              if (row.reminders && String(row.reminders).trim()) {
+                return [{ id: crypto.randomUUID(), text: String(row.reminders).trim() }];
+              }
+              return [];
+            })(),
+            notes: row.notes ?? undefined,
+            todos: Array.isArray(row.todos) ? row.todos : [],
+            program: Array.isArray(row.program) ? row.program.map((s: any) => ({
+              id: s.id,
+              time: s.time ?? '',
+              activity: s.activity ?? '',
+              responsible: s.responsible ?? '',
+              responsibleUserId: s.responsibleUserId ?? undefined
+            })) : [],
+            sortOrder: row.sort_order ?? 0,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+          }));
+
           // Reconcile currentUser with fresh users (keep session across refresh; clear if user was removed)
           const prevCurrentUser = get().currentUser;
           const reconciledCurrentUser =
@@ -562,6 +613,7 @@ export const useStore = create<AppState>()(
             paymentTransactions,
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
+            minorEvents: minorEventsError ? (state.minorEvents ?? []) : minorEvents,
             participantHiddenSections,
             budgetItemsError: budgetItemsError ? budgetItemsError.message : null,
             currentUser: reconciledCurrentUser,
@@ -983,6 +1035,71 @@ export const useStore = create<AppState>()(
         get().updateBudgetItem(budgetItemId, { attachments });
       },
 
+      addMinorEvent: async () => {
+        const events = get().minorEvents;
+        const sortOrder = events.length;
+        const newEvent: MinorEvent = {
+          id: crypto.randomUUID(),
+          title: 'Ny arrangement',
+          equipmentList: [],
+          reminders: [],
+          todos: [],
+          program: [],
+          sortOrder,
+        };
+        set((state) => ({ minorEvents: [...state.minorEvents, newEvent] }));
+        const { error } = await supabase.from('minor_events').insert({
+          id: newEvent.id,
+          title: newEvent.title,
+          todos: [],
+          program: [],
+          sort_order: sortOrder,
+        });
+        if (error) console.warn('Minor event insert error:', error.message);
+      },
+
+      updateMinorEvent: async (id, data) => {
+        const event = get().minorEvents.find((e) => e.id === id);
+        if (!event) return;
+        set((state) => ({
+          minorEvents: state.minorEvents.map((e) => (e.id === id ? { ...e, ...data } : e)),
+        }));
+        const dbData: Record<string, unknown> = {};
+        if (data.title !== undefined) dbData.title = data.title;
+        if (data.eventDate !== undefined) dbData.event_date = data.eventDate;
+        if (data.location !== undefined) dbData.location = data.location;
+        if (data.goal !== undefined) dbData.goal = data.goal;
+        if (data.expectedAttendees !== undefined) dbData.expected_attendees = data.expectedAttendees;
+        if (data.duration !== undefined) dbData.duration = data.duration;
+        if (data.status !== undefined) dbData.status = data.status;
+        if (data.eventType !== undefined) dbData.event_type = data.eventType;
+        if (data.preparationDeadline !== undefined) dbData.preparation_deadline = data.preparationDeadline;
+        if (data.equipmentList !== undefined) dbData.equipment_list = data.equipmentList;
+        if (data.rainPlan !== undefined) dbData.rain_plan = data.rainPlan;
+        if (data.reminders !== undefined) dbData.reminder_list = data.reminders.map((r: MinorEventReminder) => ({ id: r.id, text: r.text, reminder_date: r.reminderDate }));
+        if (data.notes !== undefined) dbData.notes = data.notes;
+        if (data.todos !== undefined) dbData.todos = data.todos;
+        if (data.program !== undefined) dbData.program = data.program;
+        if (Object.keys(dbData).length === 0) return;
+        dbData.updated_at = new Date().toISOString();
+        const { error } = await supabase.from('minor_events').update(dbData).eq('id', id);
+        if (error) console.warn('Minor event update error:', error.message);
+      },
+
+      removeMinorEvent: async (id) => {
+        set((state) => ({ minorEvents: state.minorEvents.filter((e) => e.id !== id) }));
+        await supabase.from('minor_events').delete().eq('id', id);
+      },
+
+      reorderMinorEventProgram: (eventId, fromIndex, toIndex) => {
+        const event = get().minorEvents.find((e) => e.id === eventId);
+        if (!event || fromIndex === toIndex) return;
+        const program = [...event.program];
+        const [removed] = program.splice(fromIndex, 1);
+        program.splice(toIndex, 0, removed);
+        get().updateMinorEvent(eventId, { program });
+      },
+
       exportAdminData: (kind) => {
         if (!get().getIsAdmin()) {
           alert("Du må være admin for å eksportere data.");
@@ -1278,7 +1395,7 @@ export const useStore = create<AppState>()(
           alert("Du må være admin for å eksportere data.");
           return;
         }
-        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions, budgetItems } = get();
+        const { users, days, activities, signups, infoPages, feedbacks, quotes, photos, paymentPlans, paymentTransactions, budgetItems, minorEvents } = get();
         const dateTag = new Date().toISOString().split('T')[0];
         const payload = {
           exportedAt: new Date().toISOString(),
@@ -1292,7 +1409,8 @@ export const useStore = create<AppState>()(
           photos,
           paymentPlans,
           paymentTransactions,
-          budgetItems
+          budgetItems,
+          minorEvents
         };
         downloadFile(`turdata-${dateTag}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
       },
