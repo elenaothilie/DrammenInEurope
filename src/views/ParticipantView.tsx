@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useStore, selectIsAdmin } from '../store';
 
 const DEPARTURE_DATE = new Date('2026-10-07T00:00:00');
+const VIPPS_NUMBER = '550383';
 
 function useCountdown() {
   const [remaining, setRemaining] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
@@ -44,6 +45,7 @@ export function ParticipantView() {
   const days = useStore((s) => s.days);
   const currentUser = useStore((s) => s.currentUser);
   const isLoading = useStore((s) => s.isLoading);
+  const error = useStore((s) => s.error);
   const paymentMonths = useStore((s) => s.paymentMonths);
   const setPaymentMonth = useStore((s) => s.setPaymentMonth);
   const loginWithCredentials = useStore((s) => s.loginWithCredentials);
@@ -143,6 +145,11 @@ export function ParticipantView() {
             <p className="text-royal/60 type-label mt-2">
               Brukernavn = to første bokstaver i navnet. Passord = fødselsdato DDMMYY.
             </p>
+            {error && (
+              <p className="mt-3 p-3 bg-amber-100 border border-amber-300 text-amber-800 text-xs rounded">
+                {error}
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -337,11 +344,15 @@ export function ParticipantView() {
               <div>
                 <p className="type-label-wide text-royal/50">Vipps</p>
                 <a
-                  href="#"
+                  href="https://vipps.no"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-royal font-bold underline decoration-royal/30 underline-offset-2 hover:decoration-royal"
+                  title={`Åpne Vipps og betal ${monthlyAmount} kr til ${VIPPS_NUMBER}`}
                 >
-                  Vipps-nummer kommer
+                  {VIPPS_NUMBER}
                 </a>
+                <p className="text-royal/60 type-label mt-0.5">Trykk for å åpne Vipps – betal {monthlyAmount} kr</p>
               </div>
             </div>
 

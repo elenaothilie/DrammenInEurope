@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from './lib/supabaseClient';
+import { supabase, hasValidSupabaseEnv } from './lib/supabaseClient';
 import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment } from './types';
 
 type ExportKind =
@@ -348,6 +348,13 @@ export const useStore = create<AppState>()(
       // -----------------------------------------------------------------------
       fetchData: async () => {
         set({ isLoading: true, error: null });
+        if (!hasValidSupabaseEnv) {
+          set({
+            isLoading: false,
+            error: 'Mangler .env: legg til VITE_SUPABASE_URL og VITE_SUPABASE_ANON_KEY (se .env.example)',
+          });
+          return;
+        }
         try {
           await ensureAuthSession();
           // Parallel Fetch
