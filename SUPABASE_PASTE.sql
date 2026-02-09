@@ -124,6 +124,7 @@ create table if not exists payment_months (
   month text not null,
   paid boolean default false,
   paid_at timestamptz,
+  dugnad boolean default false,
   unique(user_id, month)
 );
 
@@ -316,6 +317,9 @@ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'minor_events' and column_name = 'equipment_needed') then
     alter table minor_events add column equipment_needed text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'payment_months' and column_name = 'dugnad') then
+    alter table payment_months add column dugnad boolean default false;
   end if;
 end $$;
 

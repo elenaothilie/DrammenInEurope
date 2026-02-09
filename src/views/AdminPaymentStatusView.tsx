@@ -31,8 +31,8 @@ export function AdminPaymentStatusView() {
     });
   }, [users, paymentStatusSearch]);
 
-  const getPaidMonthSetForUser = (userId: string) =>
-    new Set(paymentMonths.filter((row) => row.userId === userId && row.paid).map((row) => row.month));
+  const getSatisfiedMonthSetForUser = (userId: string) =>
+    new Set(paymentMonths.filter((row) => row.userId === userId && (row.paid || row.dugnad)).map((row) => row.month));
   const totalPaidAmountAll = paymentMonths.filter((row) => row.paid).length * MONTHLY_AMOUNT;
   const shouldShowPaymentStatus = showPaymentStatus || paymentStatusSearch.trim().length > 0;
 
@@ -81,7 +81,7 @@ export function AdminPaymentStatusView() {
           <div className="max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredPaymentUsers.map((user) => {
-                const paidSet = getPaidMonthSetForUser(user.id);
+                const paidSet = getSatisfiedMonthSetForUser(user.id);
                 const totalPaidMonths = paidSet.size;
                 const totalTarget = PAYMENT_PLAN_MONTHS.length * MONTHLY_AMOUNT;
                 const totalPaidAmount = totalPaidMonths * MONTHLY_AMOUNT;

@@ -1,11 +1,22 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useStore, selectIsAdmin } from '../store';
 
 const DEPARTURE_DATE = new Date('2026-10-07T00:00:00');
 const VIPPS_NUMBER = '550383';
 const HOODIE_PRICE = 350;
 const HOODIE_SIZES: HoodieSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+function isUnder18(birthDate: string | undefined): boolean {
+  if (!birthDate) return false;
+  const [y, m, d] = birthDate.split('-').map(Number);
+  if (!y || !m || !d) return false;
+  const birth = new Date(y, m - 1, d);
+  const today = new Date();
+  const age = today.getFullYear() - birth.getFullYear() -
+    (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+  return age < 18;
+}
 
 function useCountdown() {
   const [remaining, setRemaining] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
@@ -51,7 +62,7 @@ export function ParticipantView() {
   const isLoading = useStore((s) => s.isLoading);
   const error = useStore((s) => s.error);
   const paymentMonths = useStore((s) => s.paymentMonths);
-  const setPaymentMonth = useStore((s) => s.setPaymentMonth);
+  const setPaymentMonthOption = useStore((s) => s.setPaymentMonthOption);
   const loginWithCredentials = useStore((s) => s.loginWithCredentials);
   const users = useStore((s) => s.users);
   const logout = useStore((s) => s.logout);
@@ -118,15 +129,27 @@ export function ParticipantView() {
     });
   }, []);
 
-  const paidMonths = useMemo(() => {
+  const under18 = isUnder18(currentUser?.birthDate);
+  const satisfiedMonths = useMemo(() => {
     const currentUserId = currentUser?.id;
     if (!currentUserId) return new Set<string>();
     return new Set(
       paymentMonths
-        .filter((row) => row.userId === currentUserId && row.paid)
+        .filter((row) => row.userId === currentUserId && (row.paid || row.dugnad))
         .map((row) => row.month)
     );
   }, [paymentMonths, currentUser?.id]);
+  const getMonthOption = useCallback(
+    (monthKey: string): 'vipps' | 'dugnad' | null => {
+      if (!currentUser?.id) return null;
+      const row = paymentMonths.find((r) => r.userId === currentUser.id && r.month === monthKey);
+      if (!row) return null;
+      if (row.paid) return 'vipps';
+      if (row.dugnad) return 'dugnad';
+      return null;
+    },
+    [paymentMonths, currentUser?.id]
+  );
 
   const countdown = useCountdown();
 
@@ -212,16 +235,16 @@ export function ParticipantView() {
     );
   }
 
-  const totalPaidMonths = paidMonths.size;
+  const totalSatisfiedMonths = satisfiedMonths.size;
   const monthlyAmount = 350;
   const totalTarget = paymentPlanMonths.length * monthlyAmount;
-  const totalPaidAmount = totalPaidMonths * monthlyAmount;
+  const totalPaidAmount = totalSatisfiedMonths * monthlyAmount;
   const progressPercent = totalTarget > 0 ? Math.min(100, Math.round((totalPaidAmount / totalTarget) * 100)) : 0;
   const remainingAmount = Math.max(0, totalTarget - totalPaidAmount);
 
-  const toggleMonth = (monthKey: string, paid: boolean) => {
+  const setMonthOption = (monthKey: string, option: 'vipps' | 'dugnad' | null) => {
     if (!currentUser?.id) return;
-    setPaymentMonth(currentUser.id, monthKey, paid);
+    setPaymentMonthOption(currentUser.id, monthKey, option);
   };
 
   const handleVippsClick = (e: React.MouseEvent) => {
@@ -446,10 +469,20 @@ export function ParticipantView() {
               </div>
             </div>
 
-            <div className="pt-6 space-y-5 relative z-10">
+            {under18 ? (
+              <p className="text-royal/70 text-sm">
+                Under 18 år: Du kan enten betale med Vipps eller fullføre <strong>3,5 timer dugnad</strong> per måned.
+              </p>
+            ) : (
+              <p className="text-royal/70 text-sm">
+                Over 18 år: Du kan enten betale med Vipps eller fullføre <strong>2,5 timer dugnad</strong> per måned.
+              </p>
+            )}
+
+            <div className="pt-4 space-y-5 relative z-10">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p className="type-label-wide text-royal/50">Betalt totalt</p>
+                  <p className="type-label-wide text-royal/50">Levert totalt</p>
                   <p className="text-royal font-display font-bold text-3xl leading-none">
                     {totalPaidAmount} kr
                   </p>
@@ -459,15 +492,15 @@ export function ParticipantView() {
                 </div>
                 <div className="flex items-end gap-4">
                   <div className="text-right type-label text-royal/60">
-                    {totalPaidMonths} / {paymentPlanMonths.length} måneder
+                    {totalSatisfiedMonths} / {paymentPlanMonths.length} måneder
                   </div>
                   <div className="flex flex-col-reverse gap-1">
                     {paymentPlanMonths.map((month) => {
-                      const isPaid = paidMonths.has(month.key);
+                      const satisfied = satisfiedMonths.has(month.key);
                       return (
                         <div
                           key={month.key}
-                          className={`h-1.5 w-8 rounded-full ${isPaid ? 'bg-royal' : 'bg-royal/10'}`}
+                          className={`h-1.5 w-8 rounded-full ${satisfied ? 'bg-royal' : 'bg-royal/10'}`}
                           title={month.label}
                         />
                       );
@@ -482,29 +515,46 @@ export function ParticipantView() {
                 />
               </div>
 
-              <p className="type-label-wide text-royal/50 mb-2">Betalt måneder</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
+              <p className="type-label-wide text-royal/50 mb-2">Per måned: velg Vipps eller dugnad</p>
+              <div className="space-y-3">
                 {paymentPlanMonths.map((month) => {
-                  const isPaid = paidMonths.has(month.key);
+                  const option = getMonthOption(month.key);
                   return (
-                  <label
-                    key={month.key}
-                    className="touch-target flex items-center gap-2 border border-royal/10 rounded-sm px-2 py-2.5 sm:py-2 text-royal/80 hover:border-royal/30 active:border-royal/40 transition-colors cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      className="accent-royal"
-                      checked={isPaid}
-                      onChange={() => toggleMonth(month.key, !isPaid)}
-                    />
-                    <span className={isPaid ? 'text-royal font-semibold' : undefined}>
-                      {month.label}
-                    </span>
-                  </label>
-                )})}
+                    <div
+                      key={month.key}
+                      className="flex flex-wrap items-center gap-3 border border-royal/10 rounded-sm px-3 py-2.5 hover:border-royal/20"
+                    >
+                      <span className="text-royal font-medium min-w-[100px]">{month.label}</span>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`month-${month.key}`}
+                          className="accent-royal"
+                          checked={option === 'vipps'}
+                          onChange={() => setMonthOption(month.key, option === 'vipps' ? null : 'vipps')}
+                        />
+                        <span className={option === 'vipps' ? 'text-royal font-semibold' : 'text-royal/80'}>
+                          Betalt (Vipps)
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`month-${month.key}`}
+                          className="accent-royal"
+                          checked={option === 'dugnad'}
+                          onChange={() => setMonthOption(month.key, option === 'dugnad' ? null : 'dugnad')}
+                        />
+                        <span className={option === 'dugnad' ? 'text-royal font-semibold' : 'text-royal/80'}>
+                          Dugnad ({under18 ? '3,5' : '2,5'} t)
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
               <p className="text-royal/40 type-label-wide mt-3">
-                Huk av når du har betalt for måneden. Siste betaling er Oktober 2026.
+                Huk av når du har betalt (Vipps) eller fullført dugnad for måneden. Siste er Oktober 2026.
               </p>
             </div>
           </div>

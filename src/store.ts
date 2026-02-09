@@ -214,8 +214,8 @@ interface AppState {
   importParticipants: (participants: ParticipantImport[]) => Promise<void>;
   removeAllUsers: () => Promise<void>;
 
-  // Payments
-  setPaymentMonth: (userId: string, month: string, paid: boolean) => Promise<void>;
+  // Payments: option is how the month was satisfied (vipps = paid, dugnad = work party, null = clear)
+  setPaymentMonthOption: (userId: string, month: string, option: 'vipps' | 'dugnad' | null) => Promise<void>;
 
   // Hoodie merch: register or update size (one per participant)
   setHoodieRegistration: (userId: string, size: HoodieSize) => Promise<void>;
@@ -545,7 +545,8 @@ export const useStore = create<AppState>()(
             userId: row.user_id,
             month: row.month,
             paid: Boolean(row.paid),
-            paidAt: row.paid_at
+            paidAt: row.paid_at,
+            dugnad: Boolean(row.dugnad)
           }));
 
           const budgetItemsFromServer: BudgetItem[] = (budgetItemsData || []).map((row: any) => ({
@@ -890,15 +891,18 @@ export const useStore = create<AppState>()(
 
       },
 
-      setPaymentMonth: async (userId, month, paid) => {
+      setPaymentMonthOption: async (userId, month, option) => {
         if (!userId) return;
+        const paid = option === 'vipps';
+        const dugnad = option === 'dugnad';
+        const now = new Date().toISOString();
         set(state => {
           const existing = state.paymentMonths.find((row) => row.userId === userId && row.month === month);
           if (existing) {
             return {
               paymentMonths: state.paymentMonths.map((row) =>
                 row.userId === userId && row.month === month
-                  ? { ...row, paid, paidAt: paid ? new Date().toISOString() : undefined }
+                  ? { ...row, paid, dugnad, paidAt: paid ? now : undefined }
                   : row
               )
             };
@@ -911,7 +915,8 @@ export const useStore = create<AppState>()(
                 userId,
                 month,
                 paid,
-                paidAt: paid ? new Date().toISOString() : undefined
+                dugnad,
+                paidAt: paid ? now : undefined
               }
             ]
           };
@@ -924,7 +929,8 @@ export const useStore = create<AppState>()(
               user_id: userId,
               month,
               paid,
-              paid_at: paid ? new Date().toISOString() : null
+              paid_at: paid ? now : null,
+              dugnad
             },
             { onConflict: 'user_id,month' }
           )
@@ -945,7 +951,8 @@ export const useStore = create<AppState>()(
               userId: data.user_id,
               month: data.month,
               paid: Boolean(data.paid),
-              paidAt: data.paid_at || undefined
+              paidAt: data.paid_at || undefined,
+              dugnad: Boolean(data.dugnad)
             };
             return {
               paymentMonths: exists

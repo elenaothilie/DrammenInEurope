@@ -133,6 +133,8 @@ export interface PaymentMonth {
   month: string; // YYYY-MM
   paid: boolean;
   paidAt?: string;
+  /** True if month was satisfied by dugnad (work party) instead of Vipps. */
+  dugnad?: boolean;
 }
 
 /** Hoodie size options for merch registration. */

@@ -164,8 +164,8 @@ export function AdminParticipantsView() {
     });
   }, [users, participantSearch, participantSort]);
 
-  const getPaidMonthsForUser = (userId: string) =>
-    paymentMonths.filter((r) => r.userId === userId && r.paid).length;
+  const getSatisfiedMonthsForUser = (userId: string) =>
+    paymentMonths.filter((r) => r.userId === userId && (r.paid || r.dugnad)).length;
 
   const shouldShowParticipants = showParticipants || participantSearch.trim().length > 0;
 
@@ -347,13 +347,13 @@ export function AdminParticipantsView() {
                       <td className="py-3 text-royal/80 font-mono text-xs">{calculateAge(user.birthDate, user.age) ?? ''}</td>
                       <td className="py-3 text-royal/80">
                         <div className="text-xs font-mono uppercase text-royal/50">
-                          {getPaidMonthsForUser(user.id)} / {PAYMENT_PLAN_MONTH_COUNT} mnd
+                          {getSatisfiedMonthsForUser(user.id)} / {PAYMENT_PLAN_MONTH_COUNT} mnd
                         </div>
-                        <div className="text-sm font-bold text-royal">{formatAmount(getPaidMonthsForUser(user.id) * MONTHLY_AMOUNT)}</div>
+                        <div className="text-sm font-bold text-royal">{formatAmount(getSatisfiedMonthsForUser(user.id) * MONTHLY_AMOUNT)}</div>
                         <div className="mt-2 h-1.5 w-28 bg-royal/10 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all"
-                            style={{ width: `${Math.min(100, Math.round((getPaidMonthsForUser(user.id) / PAYMENT_PLAN_MONTH_COUNT) * 100))}%` }}
+                            style={{ width: `${Math.min(100, Math.round((getSatisfiedMonthsForUser(user.id) / PAYMENT_PLAN_MONTH_COUNT) * 100))}%` }}
                           />
                         </div>
                       </td>
