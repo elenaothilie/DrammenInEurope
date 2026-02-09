@@ -131,6 +131,16 @@ create table if not exists admin_users (
   user_id uuid primary key references profiles(id) on delete cascade
 );
 
+-- Hoodie merch: one registration per participant (user_id), size selection, pay via Vipps 550383
+create table if not exists hoodie_registrations (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  size text not null check (size in ('XS', 'S', 'M', 'L', 'XL', 'XXL')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id)
+);
+
 create table if not exists app_settings (
   key text primary key,
   value jsonb not null default '{}'::jsonb,
@@ -190,6 +200,7 @@ alter table admin_users enable row level security;
 alter table app_settings enable row level security;
 alter table minor_events enable row level security;
 alter table budget_items enable row level security;
+alter table hoodie_registrations enable row level security;
 
 drop policy if exists "Enable all access for profiles" on profiles;
 drop policy if exists "Enable all access for trip_days" on trip_days;
@@ -206,6 +217,7 @@ drop policy if exists "Enable all access for admin_users" on admin_users;
 drop policy if exists "Enable all access for app_settings" on app_settings;
 drop policy if exists "Enable all access for minor_events" on minor_events;
 drop policy if exists "Enable all access for budget_items" on budget_items;
+drop policy if exists "Enable all access for hoodie_registrations" on hoodie_registrations;
 
 create policy "Enable all access for profiles" on profiles for all using (true) with check (true);
 create policy "Enable all access for trip_days" on trip_days for all using (true) with check (true);
@@ -222,6 +234,7 @@ create policy "Enable all access for admin_users" on admin_users for all using (
 create policy "Enable all access for app_settings" on app_settings for all using (true) with check (true);
 create policy "Enable all access for minor_events" on minor_events for all using (true) with check (true);
 create policy "Enable all access for budget_items" on budget_items for all using (true) with check (true);
+create policy "Enable all access for hoodie_registrations" on hoodie_registrations for all using (true) with check (true);
 
 -- Migrations: add columns if missing
 do $$

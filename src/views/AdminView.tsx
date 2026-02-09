@@ -17,6 +17,7 @@ import {
   ListOrdered,
   Download,
   PartyPopper,
+  Shirt,
 } from 'lucide-react';
 
 export function AdminView() {
@@ -43,6 +44,7 @@ export function AdminView() {
     { title: 'Aktiviteter', icon: Activity, path: '/admin/activities' },
     { title: 'Påmeldingslister', icon: ListOrdered, path: '/admin/signups' },
     { title: 'Småarrangementer', icon: PartyPopper, path: '/admin/minor-events' },
+    { title: 'Hoodie-registreringer', icon: Shirt, path: '/admin/hoodie' },
     { title: 'Eksport', icon: Download, path: '/admin/export' },
   ];
 

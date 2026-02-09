@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase, hasValidSupabaseEnv } from './lib/supabaseClient';
-import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment, MinorEvent, MinorEventReminder } from './types';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment, MinorEvent, MinorEventReminder, HoodieRegistration, HoodieSize } from './types';
 
 type ExportKind =
   | 'users'
@@ -158,6 +158,7 @@ interface AppState {
   paymentMonths: PaymentMonth[];
   budgetItems: BudgetItem[];
   minorEvents: MinorEvent[];
+  hoodieRegistrations: HoodieRegistration[];
   /** Section IDs hidden on participant view (admin-configurable). */
   participantHiddenSections: string[];
   budgetItemsError: string | null;
@@ -216,6 +217,10 @@ interface AppState {
   // Payments
   setPaymentMonth: (userId: string, month: string, paid: boolean) => Promise<void>;
 
+  // Hoodie merch: register or update size (one per participant)
+  setHoodieRegistration: (userId: string, size: HoodieSize) => Promise<void>;
+  removeHoodieRegistration: (userId: string) => Promise<void>;
+
   // Budgets (admin only)
   addBudgetItem: (category: BudgetCategory, name?: string, budgeted?: number, actual?: number | null, dueDate?: string, deposit?: number, alertDaysBefore?: number) => Promise<void>;
   updateBudgetItem: (id: string, data: Partial<BudgetItem>) => Promise<void>;
@@ -263,6 +268,7 @@ export const useStore = create<AppState>()(
       paymentMonths: [],
       budgetItems: [],
       minorEvents: [],
+      hoodieRegistrations: [],
       participantHiddenSections: [],
       budgetItemsError: null,
       isLoading: false,
@@ -380,6 +386,7 @@ export const useStore = create<AppState>()(
             { data: paymentMonthsData, error: paymentMonthsError },
             { data: budgetItemsData, error: budgetItemsError },
             { data: minorEventsData, error: minorEventsError },
+            { data: hoodieRegistrationsData, error: hoodieRegistrationsError },
             { data: adminUsersData, error: adminUsersError },
             { data: appSettingsData }
           ] = await Promise.all([
@@ -396,6 +403,7 @@ export const useStore = create<AppState>()(
             supabase.from('payment_months').select('*').order('month', { ascending: true }),
             supabase.from('budget_items').select('*').order('sort_order', { ascending: true }),
             supabase.from('minor_events').select('*').order('sort_order', { ascending: true }),
+            supabase.from('hoodie_registrations').select('*').order('created_at', { ascending: true }),
             supabase.from('admin_users').select('user_id'),
             supabase.from('app_settings').select('value').eq('key', 'participant_hidden_sections').maybeSingle()
           ]);
@@ -413,6 +421,7 @@ export const useStore = create<AppState>()(
           if (paymentMonthsError) console.error("Payment months fetch error:", paymentMonthsError);
           if (budgetItemsError) console.error("Budget items fetch error:", budgetItemsError);
           if (minorEventsError) console.error("Minor events fetch error:", minorEventsError);
+          if (hoodieRegistrationsError) console.error("Hoodie registrations fetch error:", hoodieRegistrationsError);
           if (adminUsersError) console.error("Admin users fetch error:", adminUsersError);
 
           const adminUserIds: string[] = (adminUsersData || []).map((row: { user_id: string }) => row.user_id);
@@ -593,6 +602,14 @@ export const useStore = create<AppState>()(
             updatedAt: row.updated_at
           }));
 
+          const hoodieRegistrations: HoodieRegistration[] = (hoodieRegistrationsData || []).map((row: any) => ({
+            id: row.id,
+            userId: row.user_id,
+            size: row.size as HoodieSize,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+          }));
+
           // Reconcile currentUser with fresh users (keep session across refresh; clear if user was removed)
           const prevCurrentUser = get().currentUser;
           const reconciledCurrentUser =
@@ -614,6 +631,7 @@ export const useStore = create<AppState>()(
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
             minorEvents: minorEventsError ? (state.minorEvents ?? []) : minorEvents,
+            hoodieRegistrations,
             participantHiddenSections,
             budgetItemsError: budgetItemsError ? budgetItemsError.message : null,
             currentUser: reconciledCurrentUser,
@@ -937,6 +955,56 @@ export const useStore = create<AppState>()(
                 : [...state.paymentMonths, mapped]
             };
           });
+        }
+      },
+
+      setHoodieRegistration: async (userId, size) => {
+        const now = new Date().toISOString();
+        const existing = get().hoodieRegistrations.find((r) => r.userId === userId);
+        if (existing) {
+          set((state) => ({
+            hoodieRegistrations: state.hoodieRegistrations.map((r) =>
+              r.userId === userId ? { ...r, size, updatedAt: now } : r
+            )
+          }));
+          const { error } = await supabase
+            .from('hoodie_registrations')
+            .update({ size, updated_at: now })
+            .eq('user_id', userId);
+          if (error) {
+            console.error('Hoodie update error:', error);
+            alert('Kunne ikke oppdatere hoodie-bestilling: ' + error.message);
+            get().fetchData();
+          }
+        } else {
+          const newReg: HoodieRegistration = {
+            id: crypto.randomUUID(),
+            userId,
+            size,
+            createdAt: now,
+            updatedAt: now
+          };
+          set((state) => ({ hoodieRegistrations: [...state.hoodieRegistrations, newReg] }));
+          const { error } = await supabase.from('hoodie_registrations').insert({
+            id: newReg.id,
+            user_id: userId,
+            size,
+            updated_at: now
+          });
+          if (error) {
+            console.error('Hoodie insert error:', error);
+            alert('Kunne ikke registrere hoodie-bestilling: ' + error.message);
+            set((state) => ({ hoodieRegistrations: state.hoodieRegistrations.filter((r) => r.userId !== userId) }));
+          }
+        }
+      },
+
+      removeHoodieRegistration: async (userId) => {
+        set((state) => ({ hoodieRegistrations: state.hoodieRegistrations.filter((r) => r.userId !== userId) }));
+        const { error } = await supabase.from('hoodie_registrations').delete().eq('user_id', userId);
+        if (error) {
+          console.error('Hoodie delete error:', error);
+          get().fetchData();
         }
       },
 

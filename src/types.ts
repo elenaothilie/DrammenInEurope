@@ -135,6 +135,18 @@ export interface PaymentMonth {
   paidAt?: string;
 }
 
+/** Hoodie size options for merch registration. */
+export type HoodieSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+/** One hoodie registration per participant; pay via Vipps 550383. */
+export interface HoodieRegistration {
+  id: string;
+  userId: string;
+  size: HoodieSize;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type BudgetCategory =
   | 'meals'
   | 'activities'
@@ -162,6 +174,7 @@ export const PARTICIPANT_VIEW_SECTION_IDS = [
   'nav_feedback',
   'nav_photodrop',
   'payment_overview',
+  'hoodie',
   'day_cards',
 ] as const;
 
@@ -177,6 +190,7 @@ export const PARTICIPANT_VIEW_SECTION_LABELS: Record<ParticipantViewSectionId, s
   nav_feedback: 'Feedback',
   nav_photodrop: 'Photodrop',
   payment_overview: 'Betalingsplan',
+  hoodie: 'Hoodie (merch)',
   day_cards: 'Dag for dag (programkort)',
 };
 

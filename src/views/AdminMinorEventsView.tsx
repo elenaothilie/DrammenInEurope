@@ -21,7 +21,6 @@ import {
   Target,
   Users,
   Clock,
-  X,
   CalendarClock,
   Package,
   CloudRain,
@@ -498,13 +497,13 @@ export function AdminMinorEventsView() {
                     </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm border-collapse">
                       <thead>
-                        <tr className="border-b border-royal/20">
-                          <th className="text-left font-mono uppercase text-royal/50 py-2 w-20">Tid</th>
-                          <th className="text-left font-mono uppercase text-royal/50 py-2">Aktivitet</th>
-                          <th className="text-left font-mono uppercase text-royal/50 py-2 min-w-[140px]">Ansvarlig</th>
-                          <th className="w-8" />
+                        <tr className="border-b-2 border-royal/30">
+                          <th className="text-left font-mono uppercase text-royal/60 py-3 pr-4 w-24">Tid</th>
+                          <th className="text-left font-mono uppercase text-royal/60 py-3 pr-4">Aktivitet</th>
+                          <th className="text-left font-mono uppercase text-royal/60 py-3 pr-4 min-w-[180px]">Ansvarlig</th>
+                          <th className="w-10" />
                         </tr>
                       </thead>
                       <tbody>
@@ -512,7 +511,7 @@ export function AdminMinorEventsView() {
                           <tr
                             key={slot.id}
                             className={clsx(
-                              'border-b border-royal/5 group',
+                              'border-b border-royal/10 group hover:bg-royal/[0.02]',
                               draggedProgramIndex === idx && 'opacity-50'
                             )}
                             draggable
@@ -526,13 +525,13 @@ export function AdminMinorEventsView() {
                             }}
                             onDragEnd={() => setDraggedProgramIndex(null)}
                           >
-                            <td className="py-2 align-top">
-                              <div className="flex items-center gap-1">
-                                <span className="cursor-move text-royal/20 hover:text-royal/60">
+                            <td className="py-2.5 pr-2 align-middle">
+                              <div className="flex items-center gap-1.5">
+                                <span className="cursor-move text-royal/25 hover:text-royal/50 shrink-0" aria-hidden>
                                   <GripVertical size={14} />
                                 </span>
                                 <input
-                                  className="w-16 border-b border-royal/10 focus:border-royal bg-transparent font-mono text-xs"
+                                  className="w-14 border-0 border-b border-royal/15 focus:border-royal bg-transparent font-mono text-sm py-1 focus:outline-none"
                                   value={slot.time}
                                   onChange={(e) => handleProgramSlotChange(slot.id, 'time', e.target.value)}
                                   onBlur={(e) => handleProgramSlotChange(slot.id, 'time', e.target.value)}
@@ -540,31 +539,32 @@ export function AdminMinorEventsView() {
                                 />
                               </div>
                             </td>
-                            <td className="py-2">
+                            <td className="py-2.5 pr-2">
                               <input
-                                className="w-full border-b border-royal/10 focus:border-royal bg-transparent"
+                                className="w-full border-0 border-b border-royal/15 focus:border-royal bg-transparent text-royal py-1 focus:outline-none placeholder:text-royal/40"
                                 value={slot.activity}
                                 onChange={(e) => handleProgramSlotChange(slot.id, 'activity', e.target.value)}
                                 onBlur={(e) => handleProgramSlotChange(slot.id, 'activity', e.target.value)}
                                 placeholder="Aktivitet"
                               />
                             </td>
-                            <td className="py-2 align-top">
-                              <div className="flex flex-wrap items-center gap-1.5 min-w-[160px]">
-                                {slot.responsible ? (
-                                  <span className="inline-flex items-center gap-1 bg-royal/10 text-royal px-2 py-0.5 rounded text-xs">
-                                    {slot.responsible}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSetProgramSlotResponsible(slot.id, null, '')}
-                                      className="hover:bg-royal/20 rounded"
-                                    >
-                                      <X size={10} />
-                                    </button>
-                                  </span>
-                                ) : null}
+                            <td className="py-2.5 pr-2">
+                              <div className="flex items-center gap-1 flex-1 min-w-0">
+                                <input
+                                  className="flex-1 min-w-0 border-0 border-b border-royal/15 focus:border-royal bg-transparent text-royal py-1 focus:outline-none placeholder:text-royal/40"
+                                  value={slot.responsible}
+                                  onChange={(e) => handleProgramSlotChange(slot.id, 'responsible', e.target.value)}
+                                  onBlur={(e) => handleProgramSlotChange(slot.id, 'responsible', e.target.value)}
+                                  placeholder="Navn"
+                                  list={`program-responsible-${slot.id}`}
+                                />
+                                <datalist id={`program-responsible-${slot.id}`}>
+                                  {users.map((u) => (
+                                    <option key={u.id} value={u.fullName} />
+                                  ))}
+                                </datalist>
                                 <select
-                                  className="border border-royal/20 focus:border-royal bg-transparent text-xs py-1 rounded flex-1 min-w-0 max-w-[120px]"
+                                  className="shrink-0 border border-royal/15 rounded bg-white/80 text-royal/70 hover:text-royal hover:border-royal/30 text-xs py-1.5 pl-2 pr-6 focus:outline-none focus:ring-1 focus:ring-royal/30 cursor-pointer"
                                   value=""
                                   onChange={(e) => {
                                     const id = e.target.value;
@@ -574,26 +574,22 @@ export function AdminMinorEventsView() {
                                     }
                                     e.target.value = '';
                                   }}
+                                  title="Velg deltaker"
+                                  aria-label="Velg deltaker"
                                 >
-                                  <option value="">Velg deltaker</option>
+                                  <option value="">…</option>
                                   {users.map((u) => (
                                     <option key={u.id} value={u.id}>{u.fullName}</option>
                                   ))}
                                 </select>
-                                <input
-                                  className="border-b border-royal/10 focus:border-royal bg-transparent text-xs py-1 w-24 flex-1 min-w-0"
-                                  value={slot.responsibleUserId ? '' : slot.responsible}
-                                  onChange={(e) => handleProgramSlotChange(slot.id, 'responsible', e.target.value)}
-                                  onBlur={(e) => handleProgramSlotChange(slot.id, 'responsible', e.target.value)}
-                                  placeholder="eller fritekst"
-                                />
                               </div>
                             </td>
-                            <td className="py-2">
+                            <td className="py-2.5 pl-0 text-right align-middle">
                               <button
                                 type="button"
                                 onClick={() => handleRemoveProgramSlot(slot.id)}
-                                className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="p-1.5 text-royal/30 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                title="Fjern programpunkt"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -627,6 +623,39 @@ export function AdminMinorEventsView() {
                         value={selected.preparationDeadline ?? ''}
                         onChange={(e) => updateMinorEvent(selected.id, { preparationDeadline: e.target.value || undefined })}
                       />
+                    </div>
+
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <span className="font-display font-bold text-royal uppercase text-sm flex items-center gap-2">
+                          <ListTodo size={16} /> Oppgaver
+                        </span>
+                        <span className="text-xs font-mono text-royal/50">
+                          {selected.todos.filter((t) => t.done).length}/{selected.todos.length} fullført
+                        </span>
+                      </div>
+                      <ul className="space-y-2">
+                        {selected.todos.map((todo) => (
+                          <li key={todo.id} className="flex items-center gap-2 group">
+                            <button type="button" onClick={() => handleTodoToggle(todo.id)} className="p-1 text-royal/50 hover:text-royal shrink-0">
+                              {todo.done ? <CheckSquare size={18} /> : <Square size={18} />}
+                            </button>
+                            <input
+                              className={clsx('flex-1 border-b border-royal/10 focus:border-royal bg-transparent text-sm py-1', todo.done && 'line-through text-royal/50')}
+                              value={todo.text}
+                              onChange={(e) => handleTodoChange(todo.id, e.target.value)}
+                              onBlur={(e) => handleTodoChange(todo.id, e.target.value)}
+                              placeholder="Ny oppgave…"
+                            />
+                            <button type="button" onClick={() => handleRemoveTodo(todo.id)} className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 size={14} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      <button type="button" onClick={handleAddTodo} className="mt-2 text-xs font-mono uppercase text-royal/40 hover:text-royal flex items-center gap-1">
+                        <Plus size={12} /> Legg til oppgave
+                      </button>
                     </div>
 
                     <div>
@@ -700,39 +729,6 @@ export function AdminMinorEventsView() {
                       </ul>
                       <button type="button" onClick={handleAddReminder} className="mt-2 text-xs font-mono uppercase text-royal/40 hover:text-royal flex items-center gap-1">
                         <Plus size={12} /> Legg til påminnelse
-                      </button>
-                    </div>
-
-                    <div className="pt-2 border-t border-royal/10">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <span className="font-display font-bold text-royal uppercase text-sm flex items-center gap-2">
-                          <ListTodo size={16} /> Oppgaver
-                        </span>
-                        <span className="text-xs font-mono text-royal/50">
-                          {selected.todos.filter((t) => t.done).length}/{selected.todos.length} fullført
-                        </span>
-                      </div>
-                      <ul className="space-y-2">
-                        {selected.todos.map((todo) => (
-                          <li key={todo.id} className="flex items-center gap-2 group">
-                            <button type="button" onClick={() => handleTodoToggle(todo.id)} className="p-1 text-royal/50 hover:text-royal shrink-0">
-                              {todo.done ? <CheckSquare size={18} /> : <Square size={18} />}
-                            </button>
-                            <input
-                              className={clsx('flex-1 border-b border-royal/10 focus:border-royal bg-transparent text-sm py-1', todo.done && 'line-through text-royal/50')}
-                              value={todo.text}
-                              onChange={(e) => handleTodoChange(todo.id, e.target.value)}
-                              onBlur={(e) => handleTodoChange(todo.id, e.target.value)}
-                              placeholder="Ny oppgave…"
-                            />
-                            <button type="button" onClick={() => handleRemoveTodo(todo.id)} className="p-1 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 size={14} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                      <button type="button" onClick={handleAddTodo} className="mt-2 text-xs font-mono uppercase text-royal/40 hover:text-royal flex items-center gap-1">
-                        <Plus size={12} /> Legg til oppgave
                       </button>
                     </div>
                   </div>

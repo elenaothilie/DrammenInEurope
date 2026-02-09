@@ -4,6 +4,8 @@ import { useStore, selectIsAdmin } from '../store';
 
 const DEPARTURE_DATE = new Date('2026-10-07T00:00:00');
 const VIPPS_NUMBER = '550383';
+const HOODIE_PRICE = 350;
+const HOODIE_SIZES: HoodieSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 function useCountdown() {
   const [remaining, setRemaining] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
@@ -38,8 +40,10 @@ import {
     ClipboardList,
     Book,
     MessageCircle,
-    Camera
+    Camera,
+    Shirt
 } from 'lucide-react';
+import type { HoodieSize } from '../types';
 
 export function ParticipantView() {
   const days = useStore((s) => s.days);
@@ -53,6 +57,9 @@ export function ParticipantView() {
   const logout = useStore((s) => s.logout);
   const isAdmin = useStore(selectIsAdmin);
   const participantHiddenSections = useStore((s) => s.participantHiddenSections);
+  const hoodieRegistrations = useStore((s) => s.hoodieRegistrations);
+  const setHoodieRegistration = useStore((s) => s.setHoodieRegistration);
+  const removeHoodieRegistration = useStore((s) => s.removeHoodieRegistration);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
@@ -342,6 +349,70 @@ export function ParticipantView() {
                     <span className="type-label text-royal leading-tight">{item.label}</span>
                 </Link>
             ))}
+        </div>
+        )}
+
+        {/* Hoodie merch */}
+        {!participantHiddenSections.includes('hoodie') && (
+        <div className="mb-16">
+          <div className="flex items-center gap-3 text-royal mb-4 opacity-60">
+            <span className="type-label-wide">Merch</span>
+          </div>
+          <div className="bg-linear-to-br from-white via-paper/50 to-royal/10 border border-royal/10 p-4 sm:p-6 shadow-sm space-y-5 relative overflow-hidden">
+            <div className="flex items-center gap-2 text-royal mb-2">
+              <Shirt size={24} className="shrink-0" />
+              <h2 className="type-display-2 text-royal">Hoodie</h2>
+            </div>
+            <p className="text-royal/80 text-sm">
+              Hoodien koster <strong>{HOODIE_PRICE} kr</strong>. Du kjøper ved å velge størrelse nedenfor.
+              Betal med Vipps til{' '}
+              <a
+                href="https://vipps.no"
+                onClick={handleVippsClick}
+                className="font-bold underline decoration-royal/30 underline-offset-2 hover:decoration-royal"
+                title={`Åpne Vipps og betal ${HOODIE_PRICE} kr til ${VIPPS_NUMBER}`}
+              >
+                {VIPPS_NUMBER}
+              </a>
+              .
+            </p>
+            {(() => {
+              const myHoodie = currentUser ? hoodieRegistrations.find((r) => r.userId === currentUser.id) : null;
+              return (
+                <div className="space-y-4 pt-2">
+                  <p className="type-label-wide text-royal/50">Velg størrelse</p>
+                  <div className="flex flex-wrap gap-2">
+                    {HOODIE_SIZES.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => currentUser && setHoodieRegistration(currentUser.id, size)}
+                        className={`touch-target px-4 py-2.5 border text-sm font-mono uppercase transition-colors ${
+                          myHoodie?.size === size
+                            ? 'bg-royal text-white border-royal'
+                            : 'border-royal/30 text-royal hover:border-royal hover:bg-royal/10'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                  {myHoodie && (
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      <span className="text-royal font-semibold">Du har valgt: {myHoodie.size}</span>
+                      <button
+                        type="button"
+                        onClick={() => currentUser && removeHoodieRegistration(currentUser.id)}
+                        className="type-label text-royal/60 hover:text-royal underline"
+                      >
+                        Fjern bestilling
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
         </div>
         )}
 
