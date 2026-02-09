@@ -525,7 +525,10 @@ export function ParticipantView() {
                       className="flex flex-wrap items-center gap-3 border border-royal/10 rounded-sm px-3 py-2.5 hover:border-royal/20"
                     >
                       <span className="text-royal font-medium min-w-[100px]">{month.label}</span>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label
+                        className="flex items-center gap-2 cursor-pointer"
+                        onClick={(e) => { if (option === 'vipps') { e.preventDefault(); setMonthOption(month.key, null); } }}
+                      >
                         <input
                           type="radio"
                           name={`month-${month.key}`}
@@ -537,7 +540,10 @@ export function ParticipantView() {
                           Betalt (Vipps)
                         </span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label
+                        className="flex items-center gap-2 cursor-pointer"
+                        onClick={(e) => { if (option === 'dugnad') { e.preventDefault(); setMonthOption(month.key, null); } }}
+                      >
                         <input
                           type="radio"
                           name={`month-${month.key}`}
