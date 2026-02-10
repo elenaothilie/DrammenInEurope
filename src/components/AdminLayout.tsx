@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LogOut, ArrowUpRight } from 'lucide-react';
 import { useStore } from '../store';
+import { ThemeToggle } from './ThemeToggle';
 
 export function AdminLayout() {
   const location = useLocation();
@@ -8,7 +9,7 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-paper selection:bg-royal selection:text-white pb-safe">
-      <div className="bg-royal text-white px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-50 shadow-md">
+      <div className="bg-royal text-white px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2 sticky top-0 z-50 shadow-md" data-keep-royal>
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <div className="bg-white text-royal font-bold font-mono px-2 py-1 text-xs rounded-sm shrink-0">
             ADMIN
@@ -24,6 +25,7 @@ export function AdminLayout() {
           </h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <ThemeToggle variant="on-dark" />
           <Link
             to="/"
             className="text-white/60 hover:text-white flex items-center gap-2 font-mono text-xs uppercase"

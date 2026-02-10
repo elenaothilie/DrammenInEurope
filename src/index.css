@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode: same palette, class-based toggle */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Self-hosted Source Sans 3 (Latin includes Ø Æ Å) – loads from app, no Google dependency */
 @import "@fontsource/source-sans-3/latin-400.css";
 @import "@fontsource/source-sans-3/latin-600.css";
@@ -100,9 +103,11 @@
     font-size: 1rem;
     line-height: var(--leading-body);
     letter-spacing: var(--letter-spacing-body);
-    /* Safe area for notched devices */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+  html.dark body {
+    @apply bg-royal-dark text-paper selection:bg-paper selection:text-royal-dark;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold uppercase;
@@ -274,4 +279,121 @@ input:focus, textarea:focus {
 .animate-stagger > *:nth-child(8) { animation-delay: 0.24s; }
 .animate-stagger > *:nth-child(9) { animation-delay: 0.27s; }
 .animate-stagger > *:nth-child(10) { animation-delay: 0.3s; }
+
+/* Dark mode – exact opposite of light: royal ↔ paper/white swapped, same opacities */
+.dark { color-scheme: dark; }
+
+/* Backgrounds: paper (page) → royal-dark; white (cards) → royal */
+.dark .min-h-screen.bg-paper,
+.dark .bg-paper { background-color: var(--color-royal-dark); }
+.dark .bg-white { background-color: var(--color-royal); }
+.dark .bg-white\/40 { background-color: rgb(0 47 167 / 0.4); }
+.dark .bg-white\/60 { background-color: rgb(0 47 167 / 0.6); }
+.dark .bg-white\/70 { background-color: rgb(0 47 167 / 0.7); }
+.dark .bg-white\/80 { background-color: rgb(0 47 167 / 0.8); }
+
+/* Text: royal → paper; white → paper (hero white → royal via rule below) */
+.dark .text-royal,
+.dark .text-royal\.font-semibold,
+.dark .font-semibold.text-royal { color: var(--color-paper); }
+.dark .text-white { color: var(--color-paper); }
+.dark .text-white\/70 { color: rgb(234 232 227 / 0.7); }
+.dark .text-white\/80 { color: rgb(234 232 227 / 0.8); }
+.dark .text-white\/90 { color: rgb(234 232 227 / 0.9); }
+.dark .text-royal\/40 { color: rgb(234 232 227 / 0.4); }
+.dark .text-royal\/50 { color: rgb(234 232 227 / 0.5); }
+.dark .text-royal\/60 { color: rgb(234 232 227 / 0.6); }
+.dark .text-royal\/70 { color: rgb(234 232 227 / 0.7); }
+.dark .text-royal\/80 { color: rgb(234 232 227 / 0.8); }
+
+/* Borders: royal/X → paper/X (same opacity scale) */
+.dark .border-royal\/10 { border-color: rgb(234 232 227 / 0.1); }
+.dark .border-royal\/20 { border-color: rgb(234 232 227 / 0.2); }
+.dark .border-royal\/30 { border-color: rgb(234 232 227 / 0.3); }
+.dark .border-royal\/40 { border-color: rgb(234 232 227 / 0.4); }
+.dark .border-royal { border-color: var(--color-paper); }
+.dark .border-royal-dark,
+.dark .border-2.border-royal-dark { border-color: rgb(234 232 227 / 0.25); }
+.dark .border-paper { border-color: var(--color-royal); }
+.dark .ring-royal\/20 { --tw-ring-color: rgb(234 232 227 / 0.2); }
+.dark .ring-royal\/40 { --tw-ring-color: rgb(234 232 227 / 0.4); }
+.dark .group-hover\:ring-royal\/40:hover { --tw-ring-color: rgb(234 232 227 / 0.4); }
+
+/* Surfaces: bg-royal/X (light mode subtle blue) → paper/X (dark mode subtle paper) */
+.dark .bg-royal\/5,
+.dark .bg-royal\/\[0\.02\] { background-color: rgb(234 232 227 / 0.05); }
+.dark .bg-royal\/10,
+.dark .bg-royal\/15 { background-color: rgb(234 232 227 / 0.1); }
+.dark .bg-royal\/20 { background-color: rgb(234 232 227 / 0.2); }
+.dark .bg-royal\/25 { background-color: rgb(234 232 227 / 0.25); }
+.dark .bg-royal\/30 { background-color: rgb(234 232 227 / 0.3); }
+
+/* Buttons/accents: bg-royal (solid) → paper; bg-royal-dark → paper-dark */
+.dark .bg-royal:not([data-keep-royal]) { background-color: var(--color-paper); color: var(--color-royal-dark); }
+.dark .bg-royal-dark:not([data-keep-royal]) { background-color: var(--color-paper-dark); color: var(--color-royal-dark); }
+
+/* Hover/focus: same logic, opposite color */
+.dark .hover\:text-royal:hover { color: var(--color-paper); }
+.dark .hover\:border-royal:hover { border-color: var(--color-paper); }
+.dark .hover\:bg-royal\/25:hover { background-color: rgb(234 232 227 / 0.25); }
+.dark .focus\:border-royal:focus,
+.dark input:focus,
+.dark textarea:focus { border-color: var(--color-paper); }
+.dark .focus\:ring-royal\/30:focus { --tw-ring-color: rgb(234 232 227 / 0.3); }
+.dark .focus\:ring-2.focus\:ring-royal\/40:focus { --tw-ring-color: rgb(234 232 227 / 0.4); }
+
+/* Inputs */
+.dark input,
+.dark textarea { border-color: rgb(234 232 227 / 0.2); }
+.dark .placeholder\:text-royal\/40::placeholder { color: rgb(234 232 227 / 0.4); }
+.dark .accent-royal { accent-color: var(--color-paper); }
+.dark .focus\:ring-1.focus\:ring-royal\/30:focus { --tw-ring-color: rgb(234 232 227 / 0.3); }
+/* Underline decoration: opposite */
+.dark .decoration-royal\/30 { text-decoration-color: rgb(234 232 227 / 0.3); }
+.dark .decoration-royal { text-decoration-color: var(--color-paper); }
+.dark .hover\:decoration-royal:hover { text-decoration-color: var(--color-paper); }
+.dark .line-through.decoration-royal\/40 { text-decoration-color: rgb(234 232 227 / 0.4); }
+
+/* Gradients: exact opposite. Hero (royal block) → paper block; content cards (white→royal/10) → royal→paper/10 */
+.dark .from-white { --tw-gradient-from: var(--color-royal); --tw-gradient-to: rgb(0 47 167 / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+.dark .via-paper\/50 { --tw-gradient-to: rgb(234 232 227 / 0.08); --tw-gradient-stops: var(--tw-gradient-from), rgb(234 232 227 / 0.08), var(--tw-gradient-to); }
+.dark .to-royal\/10 { --tw-gradient-to: rgb(234 232 227 / 0.1); }
+/* Content cards: same structure as light but opposite – from-royal via-royal-dark/50 to-paper/10 */
+.dark .bg-linear-to-br.from-white.via-paper\/50.to-royal\/10 { background-image: linear-gradient(to bottom right, var(--color-royal), rgb(0 31 122 / 0.5), rgb(234 232 227 / 0.1)); }
+/* Hero/countdown: opposite of royal block = paper block, with royal text */
+.dark .bg-linear-to-br.from-royal.via-royal-dark.to-royal { background-image: linear-gradient(to bottom right, var(--color-paper), var(--color-paper-dark), var(--color-paper)); }
+.dark .from-royal.via-royal-dark.to-royal .text-white,
+.dark .from-royal.via-royal-dark.to-royal .text-white\/70,
+.dark .from-royal.via-royal-dark.to-royal .text-white\/80 { color: var(--color-royal-dark); }
+/* Progress bars (linear-to-r): opposite = paper bar */
+.dark .bg-linear-to-r.from-royal.via-royal-dark.to-royal { background-image: linear-gradient(to right, var(--color-paper), var(--color-paper-dark), var(--color-paper)); }
+
+/* Dividers */
+.dark .divide-royal\/5 > * { border-color: rgb(234 232 227 / 0.05); }
+.dark .divide-royal\/10 > * { border-color: rgb(234 232 227 / 0.1); }
+
+/* Alerts/semantic (amber, red, green): use paper as the “light” in dark mode */
+.dark .bg-amber-50,
+.dark .bg-amber-100 { background-color: rgb(0 31 122 / 0.5); }
+.dark .border-amber-200,
+.dark .border-amber-300 { border-color: rgb(234 232 227 / 0.25); }
+.dark .text-amber-700,
+.dark .text-amber-800 { color: var(--color-paper); }
+.dark .text-red-300,
+.dark .text-red-500,
+.dark .hover\:text-red-500:hover { color: var(--color-paper); }
+.dark .bg-red-500,
+.dark .bg-green-500 { background-color: var(--color-paper); color: var(--color-royal-dark); }
+.dark .text-green-600 { color: var(--color-paper); }
+
+/* Shadows: same shape, dark shadow in dark mode */
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4); }
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4); }
+.dark .shadow-\[8px_8px_0_0_rgba\(0\,47\,167\,0\.3\)\] { box-shadow: 8px 8px 0 0 rgb(234 232 227 / 0.15); }
+
+/* Selection */
+.dark .selection\:bg-royal *::selection,
+.dark .selection\:bg-royal::selection { background-color: var(--color-paper); color: var(--color-royal-dark); }
+.dark .selection\:text-white *::selection,
+.dark .selection\:text-white::selection { color: var(--color-royal-dark); }
 

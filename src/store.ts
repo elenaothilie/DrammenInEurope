@@ -164,9 +164,11 @@ interface AppState {
   budgetItemsError: string | null;
   isLoading: boolean;
   error: string | null;
-  
+  darkMode: boolean;
+
   // Actions
   fetchData: () => Promise<void>;
+  toggleDarkMode: () => void;
   loginAsUser: (userId: string) => void;
   loginWithCredentials: (username: string, password: string) => boolean;
   logout: () => void;
@@ -273,6 +275,13 @@ export const useStore = create<AppState>()(
       budgetItemsError: null,
       isLoading: false,
       error: null,
+      darkMode: false,
+
+      toggleDarkMode: () => {
+        const next = !get().darkMode;
+        set({ darkMode: next });
+        document.documentElement.classList.toggle('dark', next);
+      },
 
       addUser: async (name: string) => {
           const trimmed = name.trim();
@@ -1962,7 +1971,11 @@ export const useStore = create<AppState>()(
         paymentMonths: state.paymentMonths,
         budgetItems: state.budgetItems,
         currentUser: state.currentUser,
+        darkMode: state.darkMode,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.darkMode) document.documentElement.classList.add('dark');
+      },
     }
   )
 );

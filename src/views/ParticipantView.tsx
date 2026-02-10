@@ -52,8 +52,9 @@ import {
     Book,
     MessageCircle,
     Camera,
-    Shirt
+    Shirt,
 } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import type { HoodieSize } from '../types';
 
 export function ParticipantView() {
@@ -162,7 +163,7 @@ export function ParticipantView() {
     };
 
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 gap-6">
         <div className="w-full max-w-md bg-white/60 border border-royal/10 shadow-sm p-6 sm:p-8 space-y-6">
           <div>
             <Logo className="text-royal mb-4" width={100} />
@@ -231,6 +232,7 @@ export function ParticipantView() {
             </button>
           </form>
         </div>
+        <ThemeToggle />
       </div>
     );
   }
@@ -300,7 +302,11 @@ export function ParticipantView() {
               {(currentUser?.displayName || currentUser?.fullName || '?').charAt(0).toUpperCase()}
             </button>
             {avatarMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 py-1 min-w-[140px] bg-white border border-royal/10 shadow-lg rounded-sm z-50">
+              <div className="absolute top-full right-0 mt-2 py-1 min-w-[180px] bg-white border border-royal/10 shadow-lg rounded-sm z-50">
+                <div className="px-3 py-2.5 border-b border-royal/10">
+                  <p className="text-[10px] font-mono uppercase text-royal/50 mb-1.5">Utseende</p>
+                  <ThemeToggle />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -445,62 +451,62 @@ export function ParticipantView() {
           <div className="flex items-center gap-3 text-royal mb-4 opacity-60">
             <span className="type-label-wide">Betalingsplan</span>
           </div>
-          <div className="bg-linear-to-br from-white via-paper/50 to-royal/10 border border-royal/10 p-4 sm:p-6 shadow-sm space-y-5 sm:space-y-6 relative overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm relative z-10">
-              <div>
-                <p className="type-label-wide text-royal/50">Plan</p>
-                <p className="text-royal font-bold uppercase">Månedlig</p>
+          <div className="bg-linear-to-br from-white via-paper/50 to-royal/10 border border-royal/10 p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6 relative overflow-hidden">
+            {/* Summary: compact on mobile, same row */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-sm relative z-10">
+              <div className="min-w-0">
+                <p className="type-label-wide text-royal/50 text-[10px] sm:text-xs">Plan</p>
+                <p className="text-royal font-bold uppercase text-xs sm:text-sm truncate">Månedlig</p>
               </div>
-              <div>
-                <p className="type-label-wide text-royal/50">Beløp</p>
-                <p className="text-royal font-bold">350 kr / mnd</p>
+              <div className="min-w-0">
+                <p className="type-label-wide text-royal/50 text-[10px] sm:text-xs">Beløp</p>
+                <p className="text-royal font-bold text-xs sm:text-sm truncate">350 kr / mnd</p>
               </div>
-              <div>
-                <p className="type-label-wide text-royal/50">Vipps</p>
+              <div className="min-w-0">
+                <p className="type-label-wide text-royal/50 text-[10px] sm:text-xs">Vipps</p>
                 <a
                   href="https://vipps.no"
                   onClick={handleVippsClick}
-                  className="text-royal font-bold underline decoration-royal/30 underline-offset-2 hover:decoration-royal"
+                  className="text-royal font-bold underline decoration-royal/30 underline-offset-2 hover:decoration-royal text-xs sm:text-sm truncate block"
                   title={`Åpne Vipps og betal ${monthlyAmount} kr til ${VIPPS_NUMBER}`}
                 >
                   {VIPPS_NUMBER}
                 </a>
-                <p className="text-royal/60 type-label mt-0.5">Trykk for å åpne Vipps – betal {monthlyAmount} kr</p>
+                <p className="text-royal/60 type-label mt-0.5 text-[10px] sm:text-xs hidden sm:block">Trykk for å åpne Vipps – betal {monthlyAmount} kr</p>
               </div>
             </div>
 
-            {under18 ? (
-              <p className="text-royal/70 text-sm">
-                Under 18 år: Du kan enten betale med Vipps eller fullføre <strong>3,5 timer dugnad</strong> per måned.
-              </p>
-            ) : (
-              <p className="text-royal/70 text-sm">
-                Over 18 år: Du kan enten betale med Vipps eller fullføre <strong>2,5 timer dugnad</strong> per måned.
-              </p>
-            )}
+            <p className="text-royal/70 text-xs sm:text-sm">
+              {under18 ? (
+                <>Under 18: Vipps eller <strong>3,5 t dugnad</strong> per mnd.</>
+              ) : (
+                <>Over 18: Vipps eller <strong>2,5 t dugnad</strong> per mnd.</>
+              )}
+            </p>
 
-            <div className="pt-4 space-y-5 relative z-10">
-              <div className="flex flex-wrap items-end justify-between gap-4">
+            {/* Progress: stacked on mobile for clarity */}
+            <div className="pt-3 sm:pt-4 space-y-4 relative z-10">
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
                 <div>
-                  <p className="type-label-wide text-royal/50">Levert totalt</p>
-                  <p className="text-royal font-display font-bold text-3xl leading-none">
+                  <p className="type-label-wide text-royal/50 text-[10px] sm:text-xs">Levert totalt</p>
+                  <p className="text-royal font-display font-bold text-2xl sm:text-3xl leading-none tabular-nums">
                     {totalPaidAmount} kr
                   </p>
-                  <p className="text-royal/50 type-label mt-1">
+                  <p className="text-royal/50 type-label mt-0.5 sm:mt-1 text-xs">
                     Gjenstår {remainingAmount} kr
                   </p>
                 </div>
-                <div className="flex items-end gap-4">
-                  <div className="text-right type-label text-royal/60">
-                    {totalSatisfiedMonths} / {paymentPlanMonths.length} måneder
-                  </div>
-                  <div className="flex flex-col-reverse gap-1">
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <span className="type-label text-royal/60 text-xs">
+                    {totalSatisfiedMonths} / {paymentPlanMonths.length} mnd
+                  </span>
+                  <div className="flex gap-1 sm:gap-1.5" aria-hidden>
                     {paymentPlanMonths.map((month) => {
                       const satisfied = satisfiedMonths.has(month.key);
                       return (
                         <div
                           key={month.key}
-                          className={`h-1.5 w-8 rounded-full ${satisfied ? 'bg-royal' : 'bg-royal/10'}`}
+                          className={`h-1.5 w-5 sm:w-6 rounded-full flex-shrink-0 ${satisfied ? 'bg-royal' : 'bg-royal/10'}`}
                           title={month.label}
                         />
                       );
@@ -508,59 +514,67 @@ export function ParticipantView() {
                   </div>
                 </div>
               </div>
-              <div className="w-full h-2.5 bg-royal/10 rounded-full overflow-hidden">
+              <div className="w-full h-2 sm:h-2.5 bg-royal/10 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all"
+                  className="h-full bg-linear-to-r from-royal via-royal-dark to-royal transition-all duration-300"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
 
-              <p className="type-label-wide text-royal/50 mb-2">Per måned: velg Vipps eller dugnad</p>
-              <div className="space-y-3">
-                {paymentPlanMonths.map((month) => {
-                  const option = getMonthOption(month.key);
-                  return (
-                    <div
-                      key={month.key}
-                      className="flex flex-wrap items-center gap-3 border border-royal/10 rounded-sm px-3 py-2.5 hover:border-royal/20"
-                    >
-                      <span className="text-royal font-medium min-w-[100px]">{month.label}</span>
-                      <label
-                        className="flex items-center gap-2 cursor-pointer"
-                        onClick={(e) => { if (option === 'vipps') { e.preventDefault(); setMonthOption(month.key, null); } }}
+              <div>
+                <p className="type-label-wide text-royal/50 text-[10px] sm:text-xs mb-2 sm:mb-2.5">Per måned</p>
+                <div className="space-y-2 sm:space-y-3">
+                  {paymentPlanMonths.map((month) => {
+                    const option = getMonthOption(month.key);
+                    return (
+                      <div
+                        key={month.key}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border border-royal/10 rounded-sm p-2.5 sm:px-3 sm:py-2.5 hover:border-royal/20 transition-colors"
                       >
-                        <input
-                          type="radio"
-                          name={`month-${month.key}`}
-                          className="accent-royal"
-                          checked={option === 'vipps'}
-                          onChange={() => setMonthOption(month.key, option === 'vipps' ? null : 'vipps')}
-                        />
-                        <span className={option === 'vipps' ? 'text-royal font-semibold' : 'text-royal/80'}>
-                          Betalt (Vipps)
-                        </span>
-                      </label>
-                      <label
-                        className="flex items-center gap-2 cursor-pointer"
-                        onClick={(e) => { if (option === 'dugnad') { e.preventDefault(); setMonthOption(month.key, null); } }}
-                      >
-                        <input
-                          type="radio"
-                          name={`month-${month.key}`}
-                          className="accent-royal"
-                          checked={option === 'dugnad'}
-                          onChange={() => setMonthOption(month.key, option === 'dugnad' ? null : 'dugnad')}
-                        />
-                        <span className={option === 'dugnad' ? 'text-royal font-semibold' : 'text-royal/80'}>
-                          Dugnad ({under18 ? '3,5' : '2,5'} t)
-                        </span>
-                      </label>
-                    </div>
-                  );
-                })}
+                        <span className="text-royal font-medium text-sm sm:min-w-[88px]">{month.label}</span>
+                        <div className="flex gap-2 flex-1 min-w-0">
+                          <label
+                            className={`flex-1 flex items-center justify-center gap-1.5 cursor-pointer rounded-sm border py-2 px-2 sm:px-3 text-center text-xs sm:text-sm transition-colors touch-manipulation ${
+                              option === 'vipps'
+                                ? 'bg-royal/10 border-royal/30 text-royal font-semibold'
+                                : 'border-royal/15 text-royal/80 hover:border-royal/25'
+                            }`}
+                            onClick={(e) => { if (option === 'vipps') { e.preventDefault(); setMonthOption(month.key, null); } }}
+                          >
+                            <input
+                              type="radio"
+                              name={`month-${month.key}`}
+                              className="sr-only"
+                              checked={option === 'vipps'}
+                              onChange={() => setMonthOption(month.key, option === 'vipps' ? null : 'vipps')}
+                            />
+                            Vipps
+                          </label>
+                          <label
+                            className={`flex-1 flex items-center justify-center gap-1.5 cursor-pointer rounded-sm border py-2 px-2 sm:px-3 text-center text-xs sm:text-sm transition-colors touch-manipulation ${
+                              option === 'dugnad'
+                                ? 'bg-royal/10 border-royal/30 text-royal font-semibold'
+                                : 'border-royal/15 text-royal/80 hover:border-royal/25'
+                            }`}
+                            onClick={(e) => { if (option === 'dugnad') { e.preventDefault(); setMonthOption(month.key, null); } }}
+                          >
+                            <input
+                              type="radio"
+                              name={`month-${month.key}`}
+                              className="sr-only"
+                              checked={option === 'dugnad'}
+                              onChange={() => setMonthOption(month.key, option === 'dugnad' ? null : 'dugnad')}
+                            />
+                            Dugnad ({under18 ? '3,5' : '2,5'} t)
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <p className="text-royal/40 type-label-wide mt-3">
-                Huk av når du har betalt (Vipps) eller fullført dugnad for måneden. Siste er Oktober 2026.
+              <p className="text-royal/40 type-label-wide text-[10px] sm:text-xs mt-2">
+                Huk av når du har betalt eller fullført dugnad. Frist Oktober 2026.
               </p>
             </div>
           </div>
