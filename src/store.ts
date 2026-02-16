@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase, hasValidSupabaseEnv } from './lib/supabaseClient';
-import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment, MinorEvent, MinorEventReminder, HoodieRegistration, HoodieSize } from './types';
+import type { User, TripDay, ActivityOption, Signup, Role, InfoPage, Feedback, Quote, Photo, PaymentPlan, PaymentTransaction, PaymentMonth, BudgetItem, BudgetCategory, BudgetAttachment, MinorEvent, MinorEventReminder, HoodieRegistration, HoodieSize, TripPlace, AdminNote, AdminList, AdminListItem } from './types';
 
 type ExportKind =
   | 'users'
@@ -158,6 +158,9 @@ interface AppState {
   paymentMonths: PaymentMonth[];
   budgetItems: BudgetItem[];
   minorEvents: MinorEvent[];
+  tripPlaces: TripPlace[];
+  adminNotes: AdminNote[];
+  adminLists: AdminList[];
   hoodieRegistrations: HoodieRegistration[];
   /** Section IDs hidden on participant view (admin-configurable). */
   participantHiddenSections: string[];
@@ -234,6 +237,22 @@ interface AppState {
   updateMinorEvent: (id: string, data: Partial<MinorEvent>) => Promise<void>;
   removeMinorEvent: (id: string) => Promise<void>;
   reorderMinorEventProgram: (eventId: string, fromIndex: number, toIndex: number) => void;
+
+  // Trip places (admin map: editable list of places we're going)
+  addTripPlace: (name: string, country?: string) => Promise<void>;
+  updateTripPlace: (id: string, data: Partial<TripPlace>) => Promise<void>;
+  removeTripPlace: (id: string) => Promise<void>;
+
+  // Admin notes and lists
+  addAdminNote: (title?: string) => Promise<void>;
+  updateAdminNote: (id: string, data: Partial<AdminNote>) => Promise<void>;
+  removeAdminNote: (id: string) => Promise<void>;
+  addAdminList: (title?: string) => Promise<void>;
+  updateAdminList: (id: string, data: Partial<AdminList>) => Promise<void>;
+  updateAdminListItem: (listId: string, itemId: string, data: Partial<AdminListItem>) => Promise<void>;
+  addAdminListItem: (listId: string) => Promise<void>;
+  removeAdminListItem: (listId: string, itemId: string) => Promise<void>;
+  removeAdminList: (id: string) => Promise<void>;
   
   // Placeholder
   adminMoveUser: (userId: string, fromActivityId: string, toActivityId: string) => void;
@@ -270,6 +289,9 @@ export const useStore = create<AppState>()(
       paymentMonths: [],
       budgetItems: [],
       minorEvents: [],
+      tripPlaces: [],
+      adminNotes: [],
+      adminLists: [],
       hoodieRegistrations: [],
       participantHiddenSections: [],
       budgetItemsError: null,
@@ -395,6 +417,8 @@ export const useStore = create<AppState>()(
             { data: paymentMonthsData, error: paymentMonthsError },
             { data: budgetItemsData, error: budgetItemsError },
             { data: minorEventsData, error: minorEventsError },
+            { data: tripPlacesData, error: tripPlacesError },
+            { data: adminNotesListsData, error: adminNotesListsError },
             { data: hoodieRegistrationsData, error: hoodieRegistrationsError },
             { data: adminUsersData, error: adminUsersError },
             { data: appSettingsData }
@@ -412,6 +436,8 @@ export const useStore = create<AppState>()(
             supabase.from('payment_months').select('*').order('month', { ascending: true }),
             supabase.from('budget_items').select('*').order('sort_order', { ascending: true }),
             supabase.from('minor_events').select('*').order('sort_order', { ascending: true }),
+            supabase.from('trip_places').select('*').order('sort_order', { ascending: true }),
+            supabase.from('admin_notes_lists').select('*').order('sort_order', { ascending: true }),
             supabase.from('hoodie_registrations').select('*').order('created_at', { ascending: true }),
             supabase.from('admin_users').select('user_id'),
             supabase.from('app_settings').select('value').eq('key', 'participant_hidden_sections').maybeSingle()
@@ -430,6 +456,8 @@ export const useStore = create<AppState>()(
           if (paymentMonthsError) console.error("Payment months fetch error:", paymentMonthsError);
           if (budgetItemsError) console.error("Budget items fetch error:", budgetItemsError);
           if (minorEventsError) console.error("Minor events fetch error:", minorEventsError);
+          if (tripPlacesError) console.error("Trip places fetch error:", tripPlacesError);
+          if (adminNotesListsError) console.error("Admin notes/lists fetch error:", adminNotesListsError);
           if (hoodieRegistrationsError) console.error("Hoodie registrations fetch error:", hoodieRegistrationsError);
           if (adminUsersError) console.error("Admin users fetch error:", adminUsersError);
 
@@ -612,6 +640,36 @@ export const useStore = create<AppState>()(
             updatedAt: row.updated_at
           }));
 
+          const tripPlaces: TripPlace[] = (tripPlacesData || []).map((row: any) => ({
+            id: row.id,
+            name: row.name || '',
+            country: row.country ?? undefined,
+            lat: row.lat ?? undefined,
+            lon: row.lon ?? undefined,
+            isAirport: Boolean(row.is_airport),
+            notes: row.notes ?? undefined,
+            sortOrder: row.sort_order ?? 0
+          }));
+
+          const notesData = (adminNotesListsData || []).filter((r: any) => r.kind === 'note');
+          const listsData = (adminNotesListsData || []).filter((r: any) => r.kind === 'list');
+          const adminNotes: AdminNote[] = notesData.map((row: any) => ({
+            id: row.id,
+            title: row.title || '',
+            content: row.content || '',
+            sortOrder: row.sort_order ?? 0
+          }));
+          const adminLists: AdminList[] = listsData.map((row: any) => ({
+            id: row.id,
+            title: row.title || '',
+            items: Array.isArray(row.items) ? row.items.map((it: any) => ({
+              id: it.id ?? crypto.randomUUID(),
+              text: it.text ?? '',
+              done: Boolean(it.done)
+            })) : [],
+            sortOrder: row.sort_order ?? 0
+          }));
+
           const hoodieRegistrations: HoodieRegistration[] = (hoodieRegistrationsData || []).map((row: any) => ({
             id: row.id,
             userId: row.user_id,
@@ -641,6 +699,9 @@ export const useStore = create<AppState>()(
             paymentMonths,
             budgetItems: budgetItemsError ? (state.budgetItems ?? []) : budgetItemsFromServer,
             minorEvents: minorEventsError ? (state.minorEvents ?? []) : minorEvents,
+            tripPlaces: tripPlacesError ? (state.tripPlaces ?? []) : tripPlaces,
+            adminNotes: adminNotesListsError ? (state.adminNotes ?? []) : adminNotes,
+            adminLists: adminNotesListsError ? (state.adminLists ?? []) : adminLists,
             hoodieRegistrations,
             participantHiddenSections,
             budgetItemsError: budgetItemsError ? budgetItemsError.message : null,
@@ -1182,6 +1243,122 @@ export const useStore = create<AppState>()(
         const [removed] = program.splice(fromIndex, 1);
         program.splice(toIndex, 0, removed);
         get().updateMinorEvent(eventId, { program });
+      },
+
+      addTripPlace: async (name, country) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        const countryVal = country?.trim() || null;
+        const { data, error } = await supabase.from('trip_places').insert({ name: trimmed, country: countryVal }).select().single();
+        if (data && !error) {
+          const place: TripPlace = {
+            id: data.id,
+            name: data.name || trimmed,
+            country: data.country ?? undefined,
+            lat: data.lat ?? undefined,
+            lon: data.lon ?? undefined,
+            isAirport: Boolean(data.is_airport),
+            notes: data.notes ?? undefined,
+            sortOrder: data.sort_order ?? 0
+          };
+          set((s) => ({ tripPlaces: [...s.tripPlaces, place] }));
+        } else if (error) {
+          console.error('Add trip place error:', error);
+          alert('Kunne ikke legge til sted: ' + error.message);
+        }
+      },
+
+      updateTripPlace: async (id, data) => {
+        set((s) => ({
+          tripPlaces: s.tripPlaces.map((p) => (p.id === id ? { ...p, ...data } : p))
+        }));
+        const dbData: Record<string, unknown> = {};
+        if (data.name !== undefined) dbData.name = data.name;
+        if (data.country !== undefined) dbData.country = data.country || null;
+        if (data.lat !== undefined) dbData.lat = data.lat;
+        if (data.lon !== undefined) dbData.lon = data.lon;
+        if (data.isAirport !== undefined) dbData.is_airport = data.isAirport;
+        if (data.notes !== undefined) dbData.notes = data.notes;
+        if (Object.keys(dbData).length > 0) {
+          await supabase.from('trip_places').update(dbData).eq('id', id);
+        }
+      },
+
+      removeTripPlace: async (id) => {
+        set((s) => ({ tripPlaces: s.tripPlaces.filter((p) => p.id !== id) }));
+        await supabase.from('trip_places').delete().eq('id', id);
+      },
+
+      addAdminNote: async (title) => {
+        const t = title?.trim() || 'Ny notat';
+        const { data, error } = await supabase.from('admin_notes_lists').insert({ kind: 'note', title: t }).select().single();
+        if (data && !error) {
+          const note: AdminNote = { id: data.id, title: data.title || t, content: data.content || '', sortOrder: data.sort_order ?? 0 };
+          set((s) => ({ adminNotes: [...s.adminNotes, note] }));
+        } else if (error) alert('Kunne ikke legge til notat: ' + error.message);
+      },
+
+      updateAdminNote: async (id, data) => {
+        set((s) => ({ adminNotes: s.adminNotes.map((n) => (n.id === id ? { ...n, ...data } : n)) }));
+        const db: Record<string, unknown> = {};
+        if (data.title !== undefined) db.title = data.title;
+        if (data.content !== undefined) db.content = data.content;
+        if (Object.keys(db).length > 0) await supabase.from('admin_notes_lists').update(db).eq('id', id);
+      },
+
+      removeAdminNote: async (id) => {
+        set((s) => ({ adminNotes: s.adminNotes.filter((n) => n.id !== id) }));
+        await supabase.from('admin_notes_lists').delete().eq('id', id);
+      },
+
+      addAdminList: async (title) => {
+        const t = title?.trim() || 'Ny liste';
+        const { data, error } = await supabase.from('admin_notes_lists').insert({ kind: 'list', title: t, items: [] }).select().single();
+        if (data && !error) {
+          const list: AdminList = { id: data.id, title: data.title || t, items: [], sortOrder: data.sort_order ?? 0 };
+          set((s) => ({ adminLists: [...s.adminLists, list] }));
+        } else if (error) alert('Kunne ikke legge til liste: ' + error.message);
+      },
+
+      updateAdminList: async (id, data) => {
+        set((s) => ({ adminLists: s.adminLists.map((l) => (l.id === id ? { ...l, ...data } : l)) }));
+        const db: Record<string, unknown> = {};
+        if (data.title !== undefined) db.title = data.title;
+        if (data.items !== undefined) db.items = data.items;
+        if (Object.keys(db).length > 0) await supabase.from('admin_notes_lists').update(db).eq('id', id);
+      },
+
+      updateAdminListItem: async (listId, itemId, data) => {
+        const { adminLists } = get();
+        const list = adminLists.find((l) => l.id === listId);
+        if (!list) return;
+        const items = list.items.map((it) => (it.id === itemId ? { ...it, ...data } : it));
+        set((s) => ({ adminLists: s.adminLists.map((l) => (l.id === listId ? { ...l, items } : l)) }));
+        await supabase.from('admin_notes_lists').update({ items }).eq('id', listId);
+      },
+
+      addAdminListItem: async (listId) => {
+        const { adminLists } = get();
+        const list = adminLists.find((l) => l.id === listId);
+        if (!list) return;
+        const newItem: AdminListItem = { id: crypto.randomUUID(), text: '', done: false };
+        const items = [...list.items, newItem];
+        set((s) => ({ adminLists: s.adminLists.map((l) => (l.id === listId ? { ...l, items } : l)) }));
+        await supabase.from('admin_notes_lists').update({ items }).eq('id', listId);
+      },
+
+      removeAdminListItem: async (listId, itemId) => {
+        const { adminLists } = get();
+        const list = adminLists.find((l) => l.id === listId);
+        if (!list) return;
+        const items = list.items.filter((it) => it.id !== itemId);
+        set((s) => ({ adminLists: s.adminLists.map((l) => (l.id === listId ? { ...l, items } : l)) }));
+        await supabase.from('admin_notes_lists').update({ items }).eq('id', listId);
+      },
+
+      removeAdminList: async (id) => {
+        set((s) => ({ adminLists: s.adminLists.filter((l) => l.id !== id) }));
+        await supabase.from('admin_notes_lists').delete().eq('id', id);
       },
 
       exportAdminData: (kind) => {

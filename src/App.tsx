@@ -21,6 +21,8 @@ import { AdminSignupsView } from './views/AdminSignupsView';
 import { AdminExportView } from './views/AdminExportView';
 import { AdminMinorEventsView } from './views/AdminMinorEventsView';
 import { AdminHoodieRegistrationsView } from './views/AdminHoodieRegistrationsView';
+import { AdminMapView } from './views/AdminMapView';
+import { AdminNotesView } from './views/AdminNotesView';
 import { useStore, selectIsAdmin } from './store';
 
 function AnimatedPage({ children }: { children: React.ReactNode }) {
@@ -64,6 +66,8 @@ export default function App() {
           <Route path="minor-events" element={<AdminMinorEventsView />} />
           <Route path="hoodie" element={<AdminHoodieRegistrationsView />} />
           <Route path="export" element={<AdminExportView />} />
+          <Route path="map" element={<AdminMapView />} />
+          <Route path="notes" element={<AdminNotesView />} />
         </Route>
         <Route path="/noticeboard" element={<AnimatedPage><NoticeboardView /></AnimatedPage>} />
         <Route path="/groups" element={<AnimatedPage><GroupsView /></AnimatedPage>} />

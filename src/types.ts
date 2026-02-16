@@ -52,6 +52,42 @@ export interface ActivityOption {
   link?: string;
 }
 
+/** Admin note (freeform text). */
+export interface AdminNote {
+  id: string;
+  title: string;
+  content: string;
+  sortOrder?: number;
+}
+
+/** Admin list item (checklist). */
+export interface AdminListItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+/** Admin list (checklist with items). */
+export interface AdminList {
+  id: string;
+  title: string;
+  items: AdminListItem[];
+  sortOrder?: number;
+}
+
+/** Editable place for the trip map (admin-managed). */
+export interface TripPlace {
+  id: string;
+  name: string;
+  /** Country or region for better geocoding (e.g. "Norge", "Frankrike") */
+  country?: string;
+  lat?: number;
+  lon?: number;
+  isAirport?: boolean;
+  notes?: string;
+  sortOrder?: number;
+}
+
 export interface Signup {
   activityId: string;
   userId: string;

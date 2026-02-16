@@ -358,3 +358,31 @@ input:focus, textarea:focus {
   box-shadow: none !important;
   filter: none !important;
 }
+
+/* Map popup – match site style (royal/paper) */
+.map-royal-style .leaflet-popup-content-wrapper {
+  border: 1px solid rgb(26 37 109 / 0.2);
+  font-family: "PP Talisman", sans-serif;
+}
+.map-royal-style .leaflet-popup-content-wrapper .map-popup-inner {
+  color: var(--color-royal);
+}
+.map-royal-style .leaflet-popup-tip {
+  background: white;
+}
+html.dark .map-royal-style .leaflet-popup-content-wrapper {
+  background: var(--color-royal);
+  border-color: rgb(234 232 227 / 0.2);
+}
+html.dark .map-royal-style .leaflet-popup-content-wrapper .map-popup-inner,
+html.dark .map-royal-style .leaflet-popup-content-wrapper .map-popup-inner p {
+  color: var(--color-paper);
+}
+html.dark .map-royal-style .leaflet-popup-tip {
+  background: var(--color-royal);
+}
+
+/* Map tiles – subtle styling */
+.map-royal-style.leaflet-container {
+  font-family: "PP Talisman", sans-serif;
+}

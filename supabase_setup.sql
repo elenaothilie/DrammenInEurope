@@ -164,6 +164,32 @@ create table if not exists minor_events (
   updated_at timestamptz default now()
 );
 
+-- Trip places: editable list of places we're going (admin map)
+create table if not exists trip_places (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  country text,
+  lat double precision,
+  lon double precision,
+  is_airport boolean default false,
+  notes text,
+  sort_order int default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Admin notes and lists (admin-only scratchpad)
+create table if not exists admin_notes_lists (
+  id uuid primary key default uuid_generate_v4(),
+  kind text not null check (kind in ('note', 'list')),
+  title text not null default '',
+  content text default '',
+  items jsonb default '[]'::jsonb,
+  sort_order int default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 -- Budget items (admin only: meals, activities, transportation, staying places, other)
 create table if not exists budget_items (
   id uuid primary key default uuid_generate_v4(),
@@ -195,6 +221,8 @@ alter table admin_users enable row level security;
 alter table budget_items enable row level security;
 alter table app_settings enable row level security;
 alter table minor_events enable row level security;
+alter table trip_places enable row level security;
+alter table admin_notes_lists enable row level security;
 
 -- Drop existing policies to avoid "policy already exists" errors
 drop policy if exists "Enable all access for profiles" on profiles;
@@ -212,6 +240,8 @@ drop policy if exists "Enable all access for admin_users" on admin_users;
 drop policy if exists "Enable all access for budget_items" on budget_items;
 drop policy if exists "Enable all access for app_settings" on app_settings;
 drop policy if exists "Enable all access for minor_events" on minor_events;
+drop policy if exists "Enable all access for trip_places" on trip_places;
+drop policy if exists "Enable all access for admin_notes_lists" on admin_notes_lists;
 
 -- Create policies
 create policy "Enable all access for admin_users" on admin_users for all using (true) with check (true);
@@ -229,6 +259,8 @@ create policy "Enable all access for payment_months" on payment_months for all u
 create policy "Enable all access for budget_items" on budget_items for all using (true) with check (true);
 create policy "Enable all access for app_settings" on app_settings for all using (true) with check (true);
 create policy "Enable all access for minor_events" on minor_events for all using (true) with check (true);
+create policy "Enable all access for trip_places" on trip_places for all using (true) with check (true);
+create policy "Enable all access for admin_notes_lists" on admin_notes_lists for all using (true) with check (true);
 
 -- Optional: Add columns if table already exists (migrations)
 do $$
@@ -307,6 +339,23 @@ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_name = 'minor_events' and column_name = 'reminders') then
     alter table minor_events add column reminders text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'trip_places' and column_name = 'country') then
+    alter table trip_places add column country text;
+  end if;
+  if not exists (select 1 from information_schema.tables where table_name = 'admin_notes_lists') then
+    create table admin_notes_lists (
+      id uuid primary key default uuid_generate_v4(),
+      kind text not null check (kind in ('note', 'list')),
+      title text not null default '',
+      content text default '',
+      items jsonb default '[]'::jsonb,
+      sort_order int default 0,
+      created_at timestamptz default now(),
+      updated_at timestamptz default now()
+    );
+    alter table admin_notes_lists enable row level security;
+    create policy "Enable all access for admin_notes_lists" on admin_notes_lists for all using (true) with check (true);
   end if;
 end $$;
 
