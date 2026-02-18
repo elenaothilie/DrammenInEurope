@@ -549,20 +549,45 @@ end $$;
 -- 7. DEFAULT DATA
 -- =============================================================================
 
--- Default app settings (empty hidden sections = everything visible)
+-- Default app settings
 insert into app_settings (key, value, updated_at)
 values ('participant_hidden_sections', '["nav_team_competition"]'::jsonb, now())
 on conflict (key) do nothing;
+
+-- Ensure nav_team_competition exists in hidden sections for existing rows too
+update app_settings
+set value = case
+  when jsonb_typeof(value) = 'array' then
+    case when value ? 'nav_team_competition' then value else value || '["nav_team_competition"]'::jsonb end
+  else '["nav_team_competition"]'::jsonb
+end,
+updated_at = now()
+where key = 'participant_hidden_sections';
 
 -- Default info pages (so they exist for editing)
 insert into info_pages (slug, title, content, updated_at) values
   ('noticeboard', 'Oppslagstavle', '', now()),
   ('groups', 'Grupper', '', now()),
-  ('team-competition', 'Star Clash', '', now()),
   ('todays-plans', 'Dagens Planer', '', now()),
   ('packing-list', 'Pakkeliste', '', now()),
   ('rules', 'Regler', '', now())
 on conflict (slug) do nothing;
+
+-- Team competition page: keep existing content if already filled, otherwise initialize valid JSON
+insert into info_pages (slug, title, content, updated_at)
+values (
+  'team-competition',
+  'Star Clash',
+  '{"teams":[],"challenges":[],"submissions":[]}',
+  now()
+)
+on conflict (slug) do update
+set title = excluded.title,
+    content = case
+      when info_pages.content is null or btrim(info_pages.content) = '' then excluded.content
+      else info_pages.content
+    end,
+    updated_at = now();
 
 -- =============================================================================
 -- DONE! Next steps:

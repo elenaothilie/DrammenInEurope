@@ -116,6 +116,12 @@ function getCategoryRank(eventType?: string) {
   return idx >= 0 ? idx : EVENT_TYPE_OPTIONS.length;
 }
 
+function compareTimelineEventsByCategoryAndTitle(a: TimelineEvent, b: TimelineEvent) {
+  const categoryDiff = getCategoryRank(a.event.eventType) - getCategoryRank(b.event.eventType);
+  if (categoryDiff !== 0) return categoryDiff;
+  return (a.event.title || '').localeCompare(b.event.title || '');
+}
+
 function nextOccurrenceDate(
   dateIso: string,
   pattern: MinorEventRecurrencePattern,
@@ -464,6 +470,18 @@ export function AdminTripPrepView() {
               const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
               const daysInMonth = new Date(year, month + 1, 0).getDate();
               const cells: Array<Date | null> = [];
+              const monthDays = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1));
+              const mobileAgendaDays = monthDays.reduce<Array<{ iso: string; events: TimelineEvent[] }>>((acc, day) => {
+                const iso = dayKey(day);
+                const inRange = iso >= rangeStartIso && iso <= rangeEndIso;
+                const dayEvents = eventsByDate.get(iso) ?? [];
+                if (!inRange || dayEvents.length === 0) return acc;
+                acc.push({
+                  iso,
+                  events: [...dayEvents].sort(compareTimelineEventsByCategoryAndTitle),
+                });
+                return acc;
+              }, []);
 
               for (let i = 0; i < firstWeekday; i += 1) cells.push(null);
               for (let d = 1; d <= daysInMonth; d += 1) cells.push(new Date(year, month, d));
@@ -493,63 +511,103 @@ export function AdminTripPrepView() {
                       <ChevronRight size={16} />
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1 text-[10px] font-mono uppercase text-royal/50 mb-1">
-                    {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lor', 'Son'].map((name) => (
-                      <div key={name} className="px-1 py-1">
-                        {name}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {cells.map((cell, idx) => {
-                      if (!cell) return <div key={`empty-${idx}`} className="min-h-24 bg-transparent" />;
-                      const iso = dayKey(cell);
-                      const inRange = iso >= rangeStartIso && iso <= rangeEndIso;
-                      const dayEvents = eventsByDate.get(iso) ?? [];
-                      return (
-                        <div
-                          key={iso}
-                          className={`min-h-24 border p-1.5 ${
-                            inRange ? 'border-royal/10 bg-white' : 'border-royal/5 bg-royal/[0.02] opacity-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-mono text-royal/60">{cell.getDate()}</span>
-                            {dayEvents.length > 0 && (
-                              <span className="text-[10px] font-mono text-royal/50">{dayEvents.length}</span>
-                            )}
+                  <div className="sm:hidden space-y-2">
+                    {mobileAgendaDays.length === 0 ? (
+                      <p className="text-sm text-royal/60 border border-royal/10 bg-royal/[0.02] px-3 py-2">
+                        Ingen hendelser denne måneden.
+                      </p>
+                    ) : (
+                      mobileAgendaDays.map(({ iso, events }) => (
+                        <div key={`mobile-${iso}`} className="border border-royal/10 px-3 py-2 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-mono uppercase text-royal/60">{formatDateLabel(iso)}</p>
+                            <span className="text-[10px] font-mono text-royal/50">{events.length}</span>
                           </div>
-                          <div className="space-y-1">
-                            {[...dayEvents]
-                              .sort((a, b) => {
-                                const categoryDiff = getCategoryRank(a.event.eventType) - getCategoryRank(b.event.eventType);
-                                if (categoryDiff !== 0) return categoryDiff;
-                                return (a.event.title || '').localeCompare(b.event.title || '');
-                              })
-                              .slice(0, 3)
-                              .map((event) => {
+                          <div className="space-y-1.5">
+                            {events.map((event) => {
                               const theme = getEventTheme(event.event.eventType);
-                              const text = event.event.title || 'Uten tittel';
                               return (
                                 <button
-                                  key={event.occurrenceId}
+                                  key={`mobile-${event.occurrenceId}`}
                                   type="button"
                                   onClick={() => setSelectedEventId(event.sourceEventId)}
-                                  title={`${text} (${getEventType(event.event.eventType)})`}
-                                  className={`w-full text-left text-[10px] px-1.5 py-1 border truncate ${theme.calendarEvent}`}
+                                  className={`w-full text-left border px-2 py-1.5 text-xs ${theme.calendarEvent}`}
+                                  title={`${event.event.title || 'Uten tittel'} (${getEventType(event.event.eventType)})`}
                                 >
-                                  {text}
-                                  {event.event.isRecurring ? ' (R)' : ''}
+                                  <p className="leading-tight">
+                                    {event.event.title || 'Uten tittel'}
+                                    {event.event.isRecurring ? ' (R)' : ''}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase border ${theme.chip}`}>
+                                      <span className={`h-1.5 w-1.5 rounded-full ${theme.timelineDot}`} />
+                                      {getEventType(event.event.eventType)}
+                                    </span>
+                                    {event.event.location && <span className="text-[11px] text-royal/60">{event.event.location}</span>}
+                                  </div>
                                 </button>
                               );
                             })}
-                            {dayEvents.length > 3 && (
-                              <div className="text-[10px] text-royal/50 font-mono">+{dayEvents.length - 3} flere</div>
-                            )}
                           </div>
                         </div>
-                      );
-                    })}
+                      ))
+                    )}
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className="grid grid-cols-7 gap-1 text-[10px] font-mono uppercase text-royal/50 mb-1">
+                      {['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lor', 'Son'].map((name) => (
+                        <div key={name} className="px-1 py-1">
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {cells.map((cell, idx) => {
+                        if (!cell) return <div key={`empty-${idx}`} className="min-h-24 bg-transparent" />;
+                        const iso = dayKey(cell);
+                        const inRange = iso >= rangeStartIso && iso <= rangeEndIso;
+                        const dayEvents = eventsByDate.get(iso) ?? [];
+                        return (
+                          <div
+                            key={iso}
+                            className={`min-h-24 border p-1.5 ${
+                              inRange ? 'border-royal/10 bg-white' : 'border-royal/5 bg-royal/[0.02] opacity-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-mono text-royal/60">{cell.getDate()}</span>
+                              {dayEvents.length > 0 && (
+                                <span className="text-[10px] font-mono text-royal/50">{dayEvents.length}</span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {[...dayEvents]
+                                .sort(compareTimelineEventsByCategoryAndTitle)
+                                .slice(0, 3)
+                                .map((event) => {
+                                  const theme = getEventTheme(event.event.eventType);
+                                  const text = event.event.title || 'Uten tittel';
+                                  return (
+                                    <button
+                                      key={event.occurrenceId}
+                                      type="button"
+                                      onClick={() => setSelectedEventId(event.sourceEventId)}
+                                      title={`${text} (${getEventType(event.event.eventType)})`}
+                                      className={`w-full text-left text-[10px] px-1.5 py-1 border truncate ${theme.calendarEvent}`}
+                                    >
+                                      {text}
+                                      {event.event.isRecurring ? ' (R)' : ''}
+                                    </button>
+                                  );
+                                })}
+                              {dayEvents.length > 3 && (
+                                <div className="text-[10px] text-royal/50 font-mono">+{dayEvents.length - 3} flere</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               );
